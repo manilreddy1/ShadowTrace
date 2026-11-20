@@ -672,9 +672,83 @@ footer a:hover { color: var(--text); }
   word-break: break-all;
 }
 
+/* Device Posture Dashboard */
+.device-dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 0;
+}
+
+.device-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.device-stat .stat-label {
+  font-size: 0.72rem;
+  font-family: var(--mono);
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.device-stat .stat-val {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.device-stat .stat-val.ok { color: var(--ok); }
+.device-stat .stat-val.warn { color: var(--warn); }
+.device-stat .stat-val.bad { color: var(--bad); }
+
+.report-actions {
+  display: flex;
+  gap: 10px;
+  margin: 14px 0;
+  flex-wrap: wrap;
+}
+
+.badge-tag.remnant {
+  background: rgba(140, 160, 200, 0.15);
+  color: #8fa0c8;
+  border: 1px solid rgba(140, 160, 200, 0.3);
+}
+
 @media (max-width: 680px) {
   .tabs-nav { gap: 2px; }
   .tab-btn { font-size: 0.82rem; padding: 8px 12px; }
   .hero-box { padding: 18px; }
+  .device-dashboard { grid-template-columns: 1fr 1fr; }
+}
+
+/* Print / Forensic PDF Export Styles */
+@media print {
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+  header, nav, .tabs-nav, .usb-guide, .platform-card, footer, #paste-adb-dump, .btn, .pkg-filters, #pkg-search-input, .terminal-box {
+    display: none !important;
+  }
+  .card, .device-dashboard, .pkg-card, .verdict-banner {
+    border: 1px solid #ccc !important;
+    background: #fff !important;
+    color: #111 !important;
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+  .badge-tag {
+    border: 1px solid #888 !important;
+    color: #111 !important;
+    background: #eee !important;
+  }
+  .stat-val { color: #000 !important; }
 }
 

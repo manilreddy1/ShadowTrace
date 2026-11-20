@@ -117,9 +117,10 @@
 
       var termLower = (searchTerm || "").toLowerCase().trim();
       var filtered = packages.filter(function(p) {
-        if (filter === "sideloaded" && !p.isSideloaded) return false;
+        if (filter === "sideloaded" && (!p.isSideloaded || p.isUninstalled)) return false;
         if (filter === "accessibility" && !p.hasAccessibility) return false;
         if (filter === "threats" && !p.isKnownThreat) return false;
+        if (filter === "uninstalled" && !p.isUninstalled) return false;
         if (termLower && p.name.toLowerCase().indexOf(termLower) === -1 && p.installer.toLowerCase().indexOf(termLower) === -1) {
           return false;
         }
@@ -136,6 +137,7 @@
         var cardClass = "pkg-card";
         if (pkg.isKnownThreat) cardClass += " threat";
         else if (pkg.isSideloaded && pkg.hasAccessibility) cardClass += " sideload-acc";
+        else if (pkg.isUninstalled) cardClass += " remnant";
 
         html += '<div class="' + cardClass + '">';
         html += '  <div class="pkg-header-row">';
@@ -150,7 +152,9 @@
         if (pkg.hasDeviceAdmin) {
           html += '    <span class="badge-tag screenread">&#128737; DEVICE ADMIN</span>';
         }
-        if (pkg.isSideloaded) {
+        if (pkg.isUninstalled) {
+          html += '    <span class="badge-tag remnant">&#128465; UNINSTALLED REMNANT</span>';
+        } else if (pkg.isSideloaded) {
           html += '    <span class="badge-tag sideload">&#9888; SIDELOADED (' + escapeHtml(pkg.installer) + ')</span>';
         } else {
           html += '    <span class="badge-tag playstore">&check; ' + escapeHtml(pkg.installer) + '</span>';
@@ -191,6 +195,31 @@
         html += '</div>';
       }
 
+      // Forensic Report Actions
+      html += '<div class="report-actions">';
+      html += '  <button id="btn-export-json" class="btn btn-sm">&#128229; Export Forensic Report (JSON)</button>';
+      html += '  <button id="btn-print-report" class="btn btn-sm" style="background:var(--panel2);">&#128424; Print / Save as PDF</button>';
+      html += '</div>';
+
+      // Device Security Posture Dashboard
+      html += '<div class="device-dashboard">';
+      html += '  <div class="device-stat"><span class="stat-label">Device Model</span><span class="stat-val">' + escapeHtml(res.model || "Android Device") + '</span></div>';
+      html += '  <div class="device-stat"><span class="stat-label">Android OS</span><span class="stat-val">Android ' + escapeHtml(res.androidVersion || "Unknown") + '</span></div>';
+
+      var patchClass = "ok";
+      if (res.securityPatch && res.securityPatch !== "Unknown") {
+        var pYear = parseInt(res.securityPatch.split("-")[0], 10);
+        if (pYear < 2024) patchClass = "bad";
+        else if (pYear < 2025) patchClass = "warn";
+      }
+      html += '  <div class="device-stat"><span class="stat-label">Security Patch</span><span class="stat-val ' + patchClass + '">' + escapeHtml(res.securityPatch || "Unknown") + '</span></div>';
+
+      var bootClass = (res.verifiedBoot && res.verifiedBoot.toLowerCase() === "green") ? "ok" : "warn";
+      html += '  <div class="device-stat"><span class="stat-label">Verified Boot</span><span class="stat-val ' + bootClass + '">' + escapeHtml(res.verifiedBoot || "Unknown") + '</span></div>';
+      html += '  <div class="device-stat"><span class="stat-label">Device Admins</span><span class="stat-val">' + res.deviceAdmins.length + ' active</span></div>';
+      html += '  <div class="device-stat"><span class="stat-label">Accessibility Services</span><span class="stat-val">' + res.accessibility.length + ' active</span></div>';
+      html += '</div>';
+
       // Render hits
       if (res.hits.length > 0) {
         html += '<h4 style="margin: 14px 0 8px; color: var(--bad);">Actionable Findings:</h4>';
@@ -229,6 +258,9 @@
       html += '    <button class="filter-chip active" data-filter="all">All Packages (' + res.packagesTotal + ')</button>';
       html += '    <button class="filter-chip" data-filter="sideloaded">Sideloaded (' + res.sideloadedCount + ')</button>';
       html += '    <button class="filter-chip" data-filter="accessibility">Screen-Reading (' + accCount + ')</button>';
+      if (res.uninstalledCount > 0) {
+        html += '    <button class="filter-chip" data-filter="uninstalled">Remnants (' + res.uninstalledCount + ')</button>';
+      }
       if (threatsCount > 0) {
         html += '    <button class="filter-chip" data-filter="threats" style="color:var(--bad);">Threats (' + threatsCount + ')</button>';
       }
@@ -241,6 +273,62 @@
 
       // Initial render of package list
       renderPackageList(res.allPackages, "all", "");
+
+      // Setup Export JSON & Print report handlers
+      var btnExport = $("btn-export-json");
+      if (btnExport) {
+        btnExport.addEventListener('click', function() {
+          var reportData = {
+            toolkit: "ShadowTrace Toolkit",
+            version: "3.0.2",
+            auditType: "Android USB Device Telemetry",
+            timestamp: res.timestamp,
+            verdict: res.level,
+            device: {
+              model: res.model,
+              androidVersion: res.androidVersion,
+              securityPatch: res.securityPatch,
+              verifiedBoot: res.verifiedBoot
+            },
+            summary: {
+              packagesTotal: res.packagesTotal,
+              sideloadedCount: res.sideloadedCount,
+              uninstalledCount: res.uninstalledCount,
+              accessibilityServicesCount: res.accessibility.length,
+              deviceAdminsCount: res.deviceAdmins.length,
+              knownThreatHits: res.hits.length,
+              leadsCount: res.leads.length
+            },
+            findings: {
+              hits: res.hits,
+              leads: res.leads
+            },
+            packages: res.allPackages,
+            deviceAdmins: res.deviceAdmins,
+            accessibilityServices: res.accessibility,
+            rawProperties: res.properties
+          };
+
+          var blob = new Blob([JSON.stringify(reportData, null, 2)], { type: "application/json" });
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement("a");
+          var dateStr = new Date().toISOString().slice(0, 10);
+          var safeModel = (res.model || "device").replace(/[^a-zA-Z0-9_-]/g, "_");
+          a.href = url;
+          a.download = "shadowtrace-android-audit-" + safeModel + "-" + dateStr + ".json";
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        });
+      }
+
+      var btnPrint = $("btn-print-report");
+      if (btnPrint) {
+        btnPrint.addEventListener('click', function() {
+          window.print();
+        });
+      }
 
       // Setup filter chip click listeners
       var chips = auditResults.querySelectorAll('.filter-chip');

@@ -344,6 +344,44 @@
         }
       }
 
+      // 1b. Parse Uninstalled / Remnant Packages from pm list packages -u
+      var uninstalledSection = sections[1] || "";
+      var uLines = uninstalledSection.split(/\r?\n/);
+      for (var u = 0; u < uLines.length; u++) {
+        var ul = uLines[u].trim();
+        var um = ul.match(/^package:([a-zA-Z0-9_.]+)/);
+        if (um) {
+          var uPkg = um[1];
+          if (!packagesSet.has(uPkg)) {
+            packagesSet.add(uPkg);
+            var isThreat = !!iocMap[uPkg.toLowerCase()];
+            var uItem = {
+              name: uPkg,
+              path: "[Residual Uninstalled App Data]",
+              installer: "Residual / Remnant",
+              rawInstaller: "uninstalled",
+              isSideloaded: false,
+              isUninstalled: true,
+              hasAccessibility: false,
+              hasDeviceAdmin: false,
+              isKnownThreat: isThreat,
+              threat: iocMap[uPkg.toLowerCase()] || null
+            };
+            allPackages.push(uItem);
+            uninstalledPackages.push(uItem);
+            if (isThreat) {
+              hits.push({
+                type: "uninstalled-threat",
+                package: uPkg,
+                threat: uItem.threat,
+                severity: "known-threat",
+                details: "Previously uninstalled remnant app matches known mercenary spyware indicator."
+              });
+            }
+          }
+        }
+      }
+
       // 2. Parse Other Sections & Lines
       for (var i = 0; i < lines.length; i++) {
         var line = lines[i].trim();
@@ -466,12 +504,23 @@
         level = "worth-a-look";
       }
 
+      var devModel = properties["ro.product.model"] || properties["ro.product.device"] || "Android Device";
+      var androidVer = properties["ro.build.version.release"] || "Unknown";
+      var patchDate = properties["ro.build.version.security_patch"] || "Unknown";
+      var bootState = properties["ro.boot.verifiedbootstate"] || properties["ro.boot.flash.locked"] || "Unknown";
+
       return {
         level: level,
         timestamp: new Date().toISOString(),
         packagesTotal: allPackages.length,
         allPackages: allPackages,
-        sideloadedCount: allPackages.filter(function(p) { return p.isSideloaded; }).length,
+        sideloadedCount: allPackages.filter(function(p) { return p.isSideloaded && !p.isUninstalled; }).length,
+        uninstalledCount: uninstalledPackages.length,
+        uninstalledPackages: uninstalledPackages,
+        model: devModel,
+        androidVersion: androidVer,
+        securityPatch: patchDate,
+        verifiedBoot: bootState,
         properties: properties,
         accessibility: accessibility,
         deviceAdmins: deviceAdmins,

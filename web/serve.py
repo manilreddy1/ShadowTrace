@@ -129,11 +129,7 @@ class WebHubHandler(http.server.SimpleHTTPRequestHandler):
                 "echo '===SECTION==='; "
                 "dumpsys device_policy | grep -E '(ComponentInfo|admin=)'; "
                 "echo '===SECTION==='; "
-                "getprop ro.build.version.security_patch; "
-                "getprop ro.boot.verifiedbootstate; "
-                "getprop ro.build.tags; "
-                "getprop ro.product.model; "
-                "getprop ro.build.version.release"
+                "getprop"
             )
 
             res = subprocess.run(
