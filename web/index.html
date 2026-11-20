@@ -8,7 +8,7 @@
   <title>ShadowTrace Web Hub — Offline Spyware & Device Triage</title>
   <meta name="description" content="Official web hub for ShadowTrace Toolkit: Run direct WebUSB Android checks, offline iPhone backup analysis, verify downloads, and install across Windows, macOS, Linux, and Mobile.">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 
@@ -36,6 +36,9 @@
   <nav class="tabs-nav" aria-label="Web Hub Navigation">
     <button class="tab-btn active" data-tab="direct-checks">
       <span class="tab-icon">&flash;</span> Direct Web Checks (USB &amp; Browser)
+    </button>
+    <button class="tab-btn" data-tab="iot-auditor">
+      <span class="tab-icon">&#127760;</span> IoT &amp; Network Auditor
     </button>
     <button class="tab-btn" data-tab="download-hub">
       <span class="tab-icon">&darr;</span> Download &amp; Install Hub
@@ -124,6 +127,123 @@
       </section>
     </div>
   </main>
+
+  <!-- TAB: Home & IoT Network Auditor -->
+  <section id="iot-auditor" class="tab-content" aria-labelledby="iot-title">
+    <div class="hero-box">
+      <h2 id="iot-title">&#127760; Smart Home, IoT &amp; Local Network Security Auditor</h2>
+      <p>Discover every device connected to your local Wi-Fi or Ethernet network (smart security cameras, smart TVs, IoT hubs, smart plugs, routers, computers). Audits for dangerous open doors: unauthenticated video streaming (RTSP), open Telnet, debugging over network (ADB), and router UPnP WAN port forwardings. <strong>100% read-only &amp; non-destructive.</strong></p>
+      <div class="hero-pills">
+        <span class="pill">&check; Strictly RFC 1918 Private LAN</span>
+        <span class="pill">&check; Non-Destructive Connect &amp; Close</span>
+        <span class="pill">&check; RTSP Camera Feed Password Verification</span>
+        <span class="pill">&check; Router UPnP WAN Pinhole Detection</span>
+      </div>
+    </div>
+
+    <!-- Scan Trigger Card -->
+    <div class="card" style="margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+          <button id="btn-scan-network" class="btn btn-primary">
+            &#9889; Run IoT &amp; Network Security Audit
+          </button>
+          <span id="network-status-text" style="font-size: 0.84rem; color: var(--dim);">Ready to audit local network</span>
+        </div>
+        <div class="report-actions" id="iot-export-actions" style="margin: 0; display: none;">
+          <button id="btn-print-iot-report" class="btn btn-sm" style="background: var(--panel2);">
+            &#128438; Print / Save PDF
+          </button>
+          <button id="btn-export-iot-html" class="btn btn-sm btn-primary">
+            &#128229; Download Forensic Report (HTML)
+          </button>
+          <button id="btn-export-iot-json" class="btn btn-sm" style="background: var(--panel2); font-size: 0.78rem;">
+            &#128190; JSON
+          </button>
+        </div>
+      </div>
+
+      <div id="network-terminal" class="terminal-box" style="margin-top: 14px; max-height: 160px;" aria-live="polite">ShadowTrace Network Auditor ready. Click 'Run IoT &amp; Network Security Audit' to discover devices and inspect open doors on your local subnet.</div>
+    </div>
+
+    <!-- Audit Results Container -->
+    <div id="iot-audit-results" style="display: none;">
+      <!-- Posture Banner & Score Cards -->
+      <div id="iot-verdict-banner" class="verdict-banner" style="margin-bottom: 20px;">
+        <div class="verdict-header">
+          <div id="iot-verdict-badge" class="verdict-badge clean">GRADE A+</div>
+          <div>
+            <div id="iot-verdict-title" class="verdict-title">LOCAL NETWORK SECURITY POSTURE VERIFIED</div>
+            <div id="iot-verdict-desc" class="verdict-desc">All discovered devices and routers have been evaluated for exposure and risky open ports.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Network Stats Dashboard -->
+      <div class="device-dashboard" style="margin-bottom: 24px;">
+        <div class="device-stat">
+          <span class="stat-lbl">SUBNET &amp; ROUTER</span>
+          <span class="stat-val" id="stat-net-subnet" style="font-size: 0.85rem; font-family: var(--mono);">-</span>
+        </div>
+        <div class="device-stat">
+          <span class="stat-lbl">TOTAL DEVICES</span>
+          <span class="stat-val" id="stat-net-devices">0</span>
+        </div>
+        <div class="device-stat">
+          <span class="stat-lbl">CAMERAS &amp; VIDEO</span>
+          <span class="stat-val" id="stat-net-cams">0</span>
+        </div>
+        <div class="device-stat">
+          <span class="stat-lbl">SMART TVS &amp; IOT</span>
+          <span class="stat-val" id="stat-net-iot">0</span>
+        </div>
+        <div class="device-stat">
+          <span class="stat-lbl">RISKY OPEN DOORS</span>
+          <span class="stat-val" id="stat-net-doors">0</span>
+        </div>
+        <div class="device-stat">
+          <span class="stat-lbl">ROUTER WAN PINHOLES</span>
+          <span class="stat-val" id="stat-net-pinholes">0</span>
+        </div>
+      </div>
+
+      <!-- Router & WAN Pinholes Section -->
+      <div class="card" style="margin-bottom: 20px;" id="router-pinholes-card">
+        <h3 style="margin-top: 0; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+          <span>&#127760;</span> Router &amp; Internet Exposure (UPnP WAN Port Forwarding)
+        </h3>
+        <p style="font-size: 0.84rem; color: var(--dim); margin-bottom: 12px;">
+          UPnP allows apps or IoT devices to automatically open ports through your router's firewall to the public Internet without your knowledge.
+        </p>
+        <div id="router-pinholes-content"></div>
+      </div>
+
+      <!-- Device Filter Tabs & Search Bar -->
+      <div class="pkg-filters" style="margin-bottom: 16px;">
+        <div class="filter-pills" id="iot-category-pills">
+          <button class="pill-btn active" data-cat="all">All Devices (<span id="count-cat-all">0</span>)</button>
+          <button class="pill-btn" data-cat="camera">&#128249; Cameras (<span id="count-cat-camera">0</span>)</button>
+          <button class="pill-btn" data-cat="tv">&#128250; Smart TVs (<span id="count-cat-tv">0</span>)</button>
+          <button class="pill-btn" data-cat="iot">&#128161; Smart Home / IoT (<span id="count-cat-iot">0</span>)</button>
+          <button class="pill-btn" data-cat="router">&#127760; Routers (<span id="count-cat-router">0</span>)</button>
+          <button class="pill-btn" data-cat="computer">&#128187; Computers (<span id="count-cat-computer">0</span>)</button>
+          <button class="pill-btn" data-cat="risky">&#9888;&#65039; Risky / Attention (<span id="count-cat-risky">0</span>)</button>
+        </div>
+        <input type="text" id="iot-search-input" placeholder="Search by IP, MAC, Maker, or Device Name..." class="search-box">
+      </div>
+
+      <!-- Device Cards Grid -->
+      <div id="iot-devices-grid" class="iot-grid"></div>
+
+      <!-- Hardening & Remediation Section -->
+      <div class="card" style="margin-top: 24px;">
+        <h3 style="margin-top: 0; font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
+          <span>&#128737;</span> Recommended Hardening &amp; Defensive Measures
+        </h3>
+        <div id="iot-remediation-list"></div>
+      </div>
+    </div>
+  </section>
 
   <!-- TAB 2: Download & Install Hub -->
   <section id="download-hub" class="tab-content" aria-labelledby="download-title">
@@ -416,16 +536,16 @@ if ('serviceWorker' in navigator) {
 if ('caches' in window) {
   caches.keys().then(function(keys) {
     keys.forEach(function(k) {
-      if (k !== 'shadowtrace-web-v6') {
+      if (k !== 'shadowtrace-web-v7') {
         caches.delete(k);
       }
     });
   });
 }
 </script>
-<script src="threat_iocs.js?v=6"></script>
-<script src="webusb-adb.js?v=6"></script>
-<script src="app.js?v=6"></script>
+<script src="threat_iocs.js?v=7"></script>
+<script src="webusb-adb.js?v=7"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
 

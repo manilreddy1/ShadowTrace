@@ -115,7 +115,7 @@ def hn_target():
         raise HomeNetError("the home router could not be found on a Wi-Fi or Ethernet connection, so the check "
                            "will not run (with only a VPN or a virtual network, there is no home network to check)")
     local = hn_local_address(gateway)
-    subnet = hn_subnet(local)
+    subnet = hn_subnet(local, gateway=gateway)
     if ipaddress.ip_address(gateway) not in subnet:
         raise HomeNetError("this computer ({}) and its router ({}) are not on the same local network, so the check "
                            "will not run".format(local, gateway))
@@ -129,13 +129,22 @@ def hn_target():
     return local, subnet, gateway, note
 
 
-def hn_subnet(local):
-    """The 256 addresses around this computer, or an explanation why the check refuses to run."""
+def hn_subnet(local, gateway=None):
+    """The local network around this computer, or an explanation why the check refuses to run."""
     ip = ipaddress.ip_address(local)
     if ip.version != 4 or not ip.is_private or ip.is_loopback or ip.is_link_local or ip in ipaddress.ip_network("100.64.0.0/10"):
         raise HomeNetError("this computer's address ({}) is not on a private home or office network, so the check "
                            "will not run".format(local))
-    return ipaddress.ip_network("{}/24".format(local), strict=False)
+    net = ipaddress.ip_network("{}/24".format(local), strict=False)
+    if gateway:
+        gw_ip = ipaddress.ip_address(gateway)
+        if gw_ip not in net:
+            for prefix in (23, 22):
+                candidate = ipaddress.ip_network("{}/{}".format(local, prefix), strict=False)
+                if gw_ip in candidate:
+                    net = candidate
+                    break
+    return net
 
 
 def hn_run(argv, timeout=60):
@@ -233,14 +242,19 @@ def hn_gateway():
 
 def hn_nudge(subnet, local):
     """One empty UDP packet to each address (discard port 9), so this computer learns who answers to ARP."""
+    if subnet.num_addresses <= HN_MAX_HOSTS:
+        targets = list(subnet.hosts())
+    else:
+        local_c = ipaddress.ip_network("{}/24".format(local), strict=False)
+        targets = list(local_c.hosts())[:HN_MAX_HOSTS]
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-        for ip in list(subnet.hosts())[:HN_MAX_HOSTS]:
+        for ip in targets:
             if str(ip) != local:
                 try:
                     s.sendto(b"\0", (str(ip), 9))
                 except OSError:
                     pass
-                time.sleep(0.004)
+                time.sleep(0.002)
 
 
 def _dns_name(data, offset, depth=0):

@@ -721,11 +721,183 @@ footer a:hover { color: var(--text); }
   border: 1px solid rgba(140, 160, 200, 0.3);
 }
 
+/* IoT & Network Auditor Styles */
+.iot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.iot-card {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+  position: relative;
+}
+
+.iot-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-focus);
+}
+
+.iot-card.level-critical {
+  border-color: var(--bad);
+  background: rgba(239, 68, 68, 0.05);
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.12);
+}
+
+.iot-card.level-warn {
+  border-color: var(--warn);
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.iot-card.level-clean {
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.iot-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.iot-card-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 8px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.iot-card-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.iot-card-name {
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+  word-break: break-word;
+}
+
+.iot-card-ip {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--info);
+}
+
+.iot-card-body {
+  font-size: 0.82rem;
+  color: var(--dim);
+  margin-bottom: 12px;
+  flex: 1;
+}
+
+.iot-meta-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.iot-meta-label {
+  color: var(--dim);
+}
+
+.iot-meta-val {
+  font-family: var(--mono);
+  color: var(--text);
+}
+
+.iot-ports-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.iot-port-chip {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  padding: 3px 7px;
+  border-radius: 4px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.iot-port-chip.risky {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: var(--bad);
+  color: #fca5a5;
+  font-weight: 600;
+}
+
+.iot-port-chip.warning {
+  background: rgba(245, 158, 11, 0.18);
+  border-color: var(--warn);
+  color: #fcd34d;
+}
+
+.iot-risk-callout {
+  margin-top: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  border-left: 3px solid var(--bad);
+  background: rgba(239, 68, 68, 0.1);
+  color: #fecaca;
+}
+
+.iot-risk-callout.warn {
+  border-left-color: var(--warn);
+  background: rgba(245, 158, 11, 0.1);
+  color: #fde68a;
+}
+
+.pinhole-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  margin-top: 8px;
+}
+
+.pinhole-table th, .pinhole-table td {
+  padding: 8px 10px;
+  text-align: left;
+  border: 1px solid var(--border);
+}
+
+.pinhole-table th {
+  background: var(--panel);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.pinhole-table tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
 @media (max-width: 680px) {
   .tabs-nav { gap: 2px; }
   .tab-btn { font-size: 0.82rem; padding: 8px 12px; }
   .hero-box { padding: 18px; }
   .device-dashboard { grid-template-columns: 1fr 1fr; }
+  .iot-grid { grid-template-columns: 1fr; }
 }
 
 /* Print / Forensic PDF Export Styles */
@@ -734,17 +906,17 @@ footer a:hover { color: var(--text); }
     background: #fff !important;
     color: #111 !important;
   }
-  header, nav, .tabs-nav, .usb-guide, .platform-card, footer, #paste-adb-dump, .btn, .pkg-filters, #pkg-search-input, .terminal-box {
+  header, nav, .tabs-nav, .usb-guide, .platform-card, footer, #paste-adb-dump, .btn, .pkg-filters, #pkg-search-input, #iot-search-input, .terminal-box {
     display: none !important;
   }
-  .card, .device-dashboard, .pkg-card, .verdict-banner {
+  .card, .device-dashboard, .pkg-card, .verdict-banner, .iot-card {
     border: 1px solid #ccc !important;
     background: #fff !important;
     color: #111 !important;
     break-inside: avoid;
     box-shadow: none !important;
   }
-  .badge-tag {
+  .badge-tag, .iot-port-chip {
     border: 1px solid #888 !important;
     color: #111 !important;
     background: #eee !important;

@@ -93,6 +93,18 @@
     }
   }
 
+  function downloadReportFile(content, filename, mimeType) {
+    var blob = new Blob([content], { type: mimeType || 'text/html;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   // 3. WebUSB Android Live Check & Automatic Package Scanner
   function setupWebUsb() {
     var btnConnect = $("btn-usb-connect");
@@ -171,18 +183,6 @@
       });
 
       container.innerHTML = html;
-    }
-
-    function downloadReportFile(content, filename, mimeType) {
-      var blob = new Blob([content], { type: mimeType || 'text/html;charset=utf-8' });
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
     }
 
     function buildForensicReportHtml(res) {
@@ -683,7 +683,502 @@
     }
   }
 
-  // 4. Client-Side Hash Verifier (Web Crypto API)
+  // 4. IoT & Local Network Security Auditor
+  function buildIoTForensicReportHtml(res) {
+    var dateObj = new Date(res.timestamp || Date.now());
+    var dateUtc = dateObj.toUTCString();
+    var dateLocal = dateObj.toLocaleString();
+    var subnet = escapeHtml(res.subnet || "Local Network");
+    var router = escapeHtml(res.router || "Default Gateway");
+    var thisComputer = escapeHtml(res.this_computer || "Local Computer");
+    var randId = Math.floor(1000 + Math.random() * 9000);
+    var refId = "ST-NET-" + dateObj.getFullYear() +
+      String(dateObj.getMonth() + 1).padStart(2, "0") +
+      String(dateObj.getDate()).padStart(2, "0") + "-" + randId;
+
+    var sum = res.summary || {};
+    var verdictTitle = sum.posture_verdict || "LOCAL NETWORK SECURITY AUDIT";
+    var verdictClass = sum.posture_class || "clean";
+    var grade = sum.grade || "A+";
+    var score = sum.score || 100;
+
+    var verdictDesc = "Audited " + (res.devices ? res.devices.length : 0) + " device(s) on local subnet " + subnet + ". Evaluated IoT stream security, open management ports, and router UPnP WAN pinholes.";
+
+    var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n';
+    html += '<title>ShadowTrace Network & IoT Forensic Audit - ' + subnet + ' (' + refId + ')</title>\n';
+    html += '<style>\n';
+    html += ':root { --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; --mono: "SFMono-Regular", Consolas, Menlo, monospace; }\n';
+    html += '@page { size: A4; margin: 12mm 15mm 15mm 15mm; }\n';
+    html += 'body { font-family: var(--font); color: #0f172a; background: #f8fafc; line-height: 1.5; margin: 0; padding: 24px; font-size: 13px; }\n';
+    html += '.report-sheet { max-width: 940px; margin: 0 auto; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 36px 40px; box-shadow: 0 4px 10px rgba(0,0,0,0.06); }\n';
+    html += '.toolbar { max-width: 940px; margin: 0 auto 16px auto; display: flex; gap: 10px; justify-content: flex-end; }\n';
+    html += '.btn-action { background: #0f172a; color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }\n';
+    html += '.btn-action.secondary { background: #e2e8f0; color: #1e293b; }\n';
+    html += '.btn-action:hover { opacity: 0.9; }\n';
+    html += '.header { border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; }\n';
+    html += '.brand-title { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0; letter-spacing: 0.5px; }\n';
+    html += '.brand-sub { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 1px; }\n';
+    html += '.meta-pill { text-align: right; font-family: var(--mono); font-size: 11px; color: #475569; }\n';
+    html += '.meta-pill strong { color: #0f172a; font-size: 12px; }\n';
+    html += '.verdict-box { border-radius: 8px; padding: 16px 20px; margin: 20px 0; border: 1px solid; border-left-width: 6px; display: flex; justify-content: space-between; align-items: center; }\n';
+    html += '.verdict-box.clean { background: #f0fdf4; border-color: #86efac; border-left-color: #22c55e; color: #15803d; }\n';
+    html += '.verdict-box.warn { background: #fffbeb; border-color: #fde68a; border-left-color: #f59e0b; color: #b45309; }\n';
+    html += '.verdict-box.bad { background: #fef2f2; border-color: #fca5a5; border-left-color: #ef4444; color: #b91c1c; }\n';
+    html += '.verdict-score-badge { font-size: 28px; font-weight: 900; font-family: var(--mono); padding: 6px 14px; border-radius: 6px; background: rgba(0,0,0,0.06); }\n';
+    html += '.verdict-box h2 { margin: 0 0 4px 0; font-size: 16px; font-weight: 800; letter-spacing: 0.3px; }\n';
+    html += '.verdict-box p { margin: 0; font-size: 12.5px; color: #334155; line-height: 1.45; }\n';
+    html += 'h3.sec-title { font-size: 14px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin: 28px 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px; }\n';
+    html += '.meta-grid { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }\n';
+    html += '.meta-grid th, .meta-grid td { border: 1px solid #e2e8f0; padding: 7px 10px; text-align: left; }\n';
+    html += '.meta-grid th { background: #f8fafc; color: #475569; width: 22%; font-weight: 600; }\n';
+    html += '.meta-grid td { color: #0f172a; }\n';
+    html += '.table-container { width: 100%; overflow-x: auto; margin-top: 10px; }\n';
+    html += 'table.rep-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 24px; }\n';
+    html += 'table.rep-table th, table.rep-table td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; vertical-align: top; }\n';
+    html += 'table.rep-table th { background: #f1f5f9; color: #334155; font-weight: 700; }\n';
+    html += 'table.rep-table tr:nth-child(even) { background: #f8fafc; }\n';
+    html += '.tag { display: inline-block; padding: 2px 5px; border-radius: 3px; font-size: 9.5px; font-family: var(--mono); font-weight: 600; white-space: nowrap; margin-right: 3px; }\n';
+    html += '.tag-clean { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }\n';
+    html += '.tag-warn { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }\n';
+    html += '.tag-bad { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }\n';
+    html += '.tag-port { background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; font-family: var(--mono); font-size: 10px; }\n';
+    html += '.tag-port.risky { background: #fef2f2; color: #b91c1c; border-color: #fca5a5; font-weight: 700; }\n';
+    html += '.code-font { font-family: var(--mono); word-break: break-all; font-size: 10.5px; }\n';
+    html += '.recom-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-top: 12px; font-size: 12px; color: #334155; }\n';
+    html += '.recom-box ol { margin: 6px 0; padding-left: 20px; }\n';
+    html += '.recom-box li { margin-bottom: 4px; }\n';
+    html += '.footer-section { border-top: 1px solid #cbd5e1; margin-top: 36px; padding-top: 16px; font-size: 11px; color: #64748b; display: flex; justify-content: space-between; align-items: flex-end; }\n';
+    html += '@media print {\n';
+    html += '  body { background: #fff !important; padding: 0 !important; }\n';
+    html += '  .toolbar { display: none !important; }\n';
+    html += '  .report-sheet { border: none !important; box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }\n';
+    html += '  thead { display: table-header-group; }\n';
+    html += '  tr { break-inside: avoid; }\n';
+    html += '}\n';
+    html += '</style>\n</head>\n<body>\n';
+
+    // Toolbar
+    html += '<div class="toolbar">\n';
+    html += '<button class="btn-action" onclick="window.print()">&#128438; Print / Save as PDF</button>\n';
+    html += '</div>\n';
+
+    // Sheet
+    html += '<div class="report-sheet">\n';
+    html += '<div class="header">\n';
+    html += '<div>\n';
+    html += '<div class="brand-title">SHADOWTRACE FORENSIC NETWORK AUDIT</div>\n';
+    html += '<div class="brand-sub">Smart Home &amp; IoT Local Security Posture Assessment</div>\n';
+    html += '</div>\n';
+    html += '<div class="meta-pill">\n';
+    html += '<div>REF: <strong>' + escapeHtml(refId) + '</strong></div>\n';
+    html += '<div>DATE (UTC): ' + escapeHtml(dateUtc) + '</div>\n';
+    html += '<div>LOCAL: ' + escapeHtml(dateLocal) + '</div>\n';
+    html += '</div>\n';
+    html += '</div>\n';
+
+    // Verdict Box
+    html += '<div class="verdict-box ' + verdictClass + '">\n';
+    html += '<div>\n';
+    html += '<h2>' + escapeHtml(verdictTitle) + '</h2>\n';
+    html += '<p>' + escapeHtml(verdictDesc) + '</p>\n';
+    html += '</div>\n';
+    html += '<div class="verdict-score-badge">' + escapeHtml(grade) + ' (' + score + '/100)</div>\n';
+    html += '</div>\n';
+
+    // Network Metadata
+    html += '<h3 class="sec-title">1. Local Network Topology &amp; Gateway</h3>\n';
+    html += '<table class="meta-grid">\n';
+    html += '<tr><th>Audited Subnet</th><td>' + subnet + ' (RFC 1918 Private Range)</td><th>Host IP</th><td>' + thisComputer + '</td></tr>\n';
+    html += '<tr><th>Default Router Gateway</th><td>' + router + '</td><th>Audit Methodology</th><td>Safe RFC 1918 Connect-and-Close, Zero Credentials Sent</td></tr>\n';
+    html += '<tr><th>Total Devices Detected</th><td><strong>' + (res.devices ? res.devices.length : 0) + '</strong></td><th>Risky Open Doors</th><td><strong style="color: ' + (sum.risky_doors > 0 ? '#b91c1c' : '#15803d') + '">' + (sum.risky_doors || 0) + '</strong></td></tr>\n';
+    html += '<tr><th>Security Cameras Detected</th><td>' + (sum.cameras || 0) + '</td><th>Router WAN Pinholes (UPnP)</th><td><strong style="color: ' + (sum.pinholes > 0 ? '#b91c1c' : '#15803d') + '">' + (sum.pinholes || 0) + '</strong></td></tr>\n';
+    html += '</table>\n';
+
+    // Device Inventory Table
+    html += '<h3 class="sec-title">2. Discovered Local Devices &amp; IoT Exposure Inventory</h3>\n';
+    html += '<div class="table-container">\n';
+    html += '<table class="rep-table">\n';
+    html += '<thead><tr><th>#</th><th>IP Address</th><th>Hardware (MAC)</th><th>Vendor / OUI</th><th>Category &amp; Model</th><th>Open Ports</th><th>Security Posture</th></tr></thead>\n';
+    html += '<tbody>\n';
+
+    var devices = res.devices || [];
+    if (devices.length === 0) {
+      html += '<tr><td colspan="7" style="text-align: center; color: #64748b; padding: 14px;">No devices detected on this subnet segment.</td></tr>\n';
+    } else {
+      devices.forEach(function(d, idx) {
+        var statusBadge = '<span class="tag tag-clean">CLEAN</span>';
+        if (d.level === "critical") statusBadge = '<span class="tag tag-bad">CRITICAL</span>';
+        else if (d.level === "warn") statusBadge = '<span class="tag tag-warn">ATTENTION</span>';
+
+        var portsHtml = '<span style="color: #94a3b8;">None</span>';
+        if (d.ports && d.ports.length > 0 && d.ports_detail) {
+          portsHtml = d.ports_detail.map(function(pd) {
+            var cls = pd.risk ? "tag tag-port risky" : "tag tag-port";
+            return '<span class="' + cls + '" title="' + escapeHtml(pd.risk || pd.name) + '">' + pd.port + ' ' + escapeHtml(pd.name) + '</span>';
+          }).join(" ");
+        }
+
+        var riskNote = "";
+        if (d.video_password === "open") {
+          riskNote = '<div style="color: #b91c1c; font-weight: 700; margin-top: 4px;">⚠️ Unprotected RTSP Video Stream!</div>';
+        } else if (d.risks && d.risks.length > 0) {
+          riskNote = '<div style="color: #b45309; font-size: 10px; margin-top: 3px;">' + escapeHtml(d.risks[0]) + '</div>';
+        }
+
+        html += '<tr>\n';
+        html += '<td style="color: #64748b;">' + (idx + 1) + '</td>\n';
+        html += '<td class="code-font"><strong>' + escapeHtml(d.ip) + '</strong>' + (d.ip === res.router ? ' <span class="tag tag-clean">ROUTER</span>' : '') + '</td>\n';
+        html += '<td class="code-font">' + escapeHtml(d.mac || '—') + '</td>\n';
+        html += '<td>' + escapeHtml(d.maker || 'Unknown Vendor') + '</td>\n';
+        html += '<td><strong>' + escapeHtml(d.name || d.model || d.kind || 'Device') + '</strong><br><span style="color: #64748b; font-size: 10px;">' + escapeHtml(d.kind || d.category) + '</span></td>\n';
+        html += '<td>' + portsHtml + riskNote + '</td>\n';
+        html += '<td>' + statusBadge + '</td>\n';
+        html += '</tr>\n';
+      });
+    }
+    html += '</tbody></table>\n</div>\n';
+
+    // UPnP Port Mappings
+    html += '<h3 class="sec-title">3. Router Internet Exposure &amp; UPnP Port Forwardings</h3>\n';
+    var mappings = res.port_mappings || [];
+    if (mappings.length === 0) {
+      html += '<div style="padding: 10px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; color: #166534; font-size: 12px;">✅ Clean: Router does not advertise any active UPnP WAN port forwarding pinholes to the public Internet.</div>\n';
+    } else {
+      html += '<div class="table-container">\n<table class="rep-table">\n';
+      html += '<thead><tr><th>WAN Port</th><th>Protocol</th><th>Internal IP</th><th>Internal Port</th><th>Description</th><th>Risk Level</th></tr></thead>\n<tbody>\n';
+      mappings.forEach(function(m) {
+        html += '<tr>\n';
+        html += '<td class="code-font"><strong>' + escapeHtml(m.NewExternalPort) + '</strong></td>\n';
+        html += '<td>' + escapeHtml(m.NewProtocol || 'TCP') + '</td>\n';
+        html += '<td class="code-font">' + escapeHtml(m.NewInternalClient) + '</td>\n';
+        html += '<td class="code-font">' + escapeHtml(m.NewInternalPort) + '</td>\n';
+        html += '<td>' + escapeHtml(m.NewPortMappingDescription || 'None given') + '</td>\n';
+        html += '<td><span class="tag tag-bad">INTERNET EXPOSED</span></td>\n';
+        html += '</tr>\n';
+      });
+      html += '</tbody></table>\n</div>\n';
+    }
+
+    // Defensive Recommendations
+    html += '<h3 class="sec-title">4. Prioritized Defensive Recommendations &amp; Hardening Plan</h3>\n';
+    html += '<div class="recom-box">\n';
+    html += '<ol>\n';
+    var recs = sum.recommendations || [];
+    recs.forEach(function(r) {
+      html += '<li>' + escapeHtml(r) + '</li>\n';
+    });
+    html += '</ol>\n</div>\n';
+
+    // Footer
+    html += '<div class="footer-section">\n';
+    html += '<div>Generated by <strong>ShadowTrace Toolkit v3.0.2</strong> &middot; Defensive Triage &amp; Posture Verification</div>\n';
+    html += '<div style="text-align: right; font-family: var(--mono);">ST-VERIFY-SEAL: ' + randId + '-OFFLINE-NET</div>\n';
+    html += '</div>\n';
+
+    html += '</div>\n</body>\n</html>';
+    return html;
+  }
+
+  function setupIotAuditor() {
+    var btnScan = $("btn-scan-network");
+    var statusText = $("network-status-text");
+    var term = $("network-terminal");
+    var resultsBox = $("iot-audit-results");
+    var exportActions = $("iot-export-actions");
+    var devicesGrid = $("iot-devices-grid");
+    var searchInput = $("iot-search-input");
+    var categoryPills = $("iot-category-pills");
+    var pinholesContent = $("router-pinholes-content");
+    var remediationList = $("iot-remediation-list");
+
+    var latestData = null;
+    var currentCategory = "all";
+
+    function logNet(msg) {
+      if (!term) return;
+      var now = new Date();
+      var timeStr = "[" + now.toTimeString().split(" ")[0] + "] ";
+      term.textContent += timeStr + msg + "\n";
+      term.scrollTop = term.scrollHeight;
+    }
+
+    if (!btnScan) return;
+
+    btnScan.addEventListener('click', async function() {
+      btnScan.disabled = true;
+      btnScan.innerHTML = '<span class="spinner" style="display:inline-block; width:14px; height:14px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; margin-right:6px; vertical-align:middle;"></span> Auditing Network...';
+      if (statusText) statusText.textContent = "Scanning local subnet & discovering devices...";
+      term.textContent = "";
+      logNet("Initiating RFC 1918 safe home & IoT network scan...");
+      logNet("Probing default gateway and interface routing...");
+
+      var simTimer = setTimeout(function() {
+        logNet("Broadcasting mDNS / Bonjour queries on 224.0.0.251:5353...");
+        logNet("Sending UPnP / SSDP M-SEARCH discovery to 239.255.255.250:1900...");
+      }, 1200);
+
+      var simTimer2 = setTimeout(function() {
+        logNet("Safe non-intrusive port checks on IoT doors (connect & close, zero credentials sent)...");
+        logNet("Checking for unencrypted RTSP camera streams & router UPnP WAN mappings...");
+      }, 3500);
+
+      try {
+        var resp = await fetch("/api/scan-network", { cache: "no-cache" });
+        clearTimeout(simTimer);
+        clearTimeout(simTimer2);
+
+        if (!resp.ok) {
+          throw new Error("HTTP error " + resp.status + " from local scan bridge.");
+        }
+
+        var data = await resp.json();
+        if (!data.ok) {
+          throw new Error(data.error || "Network audit failed.");
+        }
+
+        latestData = data;
+        logNet("Discovered " + (data.devices ? data.devices.length : 0) + " device(s) on " + data.subnet);
+        logNet("Audit complete. Overall posture grade: " + (data.summary ? data.summary.grade : "A"));
+        if (statusText) statusText.textContent = "Audit complete. " + (data.devices ? data.devices.length : 0) + " devices found.";
+
+        renderIotResults(data);
+
+      } catch (err) {
+        clearTimeout(simTimer);
+        clearTimeout(simTimer2);
+        logNet("Error: " + err.message);
+        if (statusText) statusText.textContent = "Scan paused: " + err.message;
+        alert("IoT Network Audit Note:\n" + err.message + "\n\nMake sure the local server is running ('python web/serve.py') and your computer is connected to a local Wi-Fi or Ethernet network.");
+      } finally {
+        btnScan.disabled = false;
+        btnScan.innerHTML = "&#9889; Run IoT &amp; Network Security Audit";
+      }
+    });
+
+    function renderIotResults(data) {
+      if (!resultsBox) return;
+      resultsBox.style.display = "block";
+      if (exportActions) exportActions.style.display = "flex";
+
+      var sum = data.summary || {};
+
+      // 1. Verdict Banner
+      var vBadge = $("iot-verdict-badge");
+      var vTitle = $("iot-verdict-title");
+      var vDesc = $("iot-verdict-desc");
+
+      if (vBadge) {
+        vBadge.textContent = "GRADE " + (sum.grade || "A+");
+        vBadge.className = "verdict-badge " + (sum.posture_class || "clean");
+      }
+      if (vTitle) vTitle.textContent = sum.posture_verdict || "NETWORK POSTURE VERIFIED";
+      if (vDesc) vDesc.textContent = "Audited " + (data.devices ? data.devices.length : 0) + " device(s) on " + data.subnet + ". Found " + (sum.risky_doors || 0) + " risky door(s) and " + (sum.pinholes || 0) + " router WAN pinhole(s).";
+
+      // 2. Metrics
+      if ($("stat-net-subnet")) $("stat-net-subnet").textContent = data.subnet + " (GW: " + data.router + ")";
+      if ($("stat-net-devices")) $("stat-net-devices").textContent = data.devices ? data.devices.length : 0;
+      if ($("stat-net-cams")) $("stat-net-cams").textContent = sum.cameras || 0;
+      if ($("stat-net-iot")) $("stat-net-iot").textContent = (sum.tvs || 0) + (sum.iot || 0);
+
+      var doorsEl = $("stat-net-doors");
+      if (doorsEl) {
+        doorsEl.textContent = sum.risky_doors || 0;
+        doorsEl.className = "stat-val " + (sum.risky_doors > 0 ? (sum.critical_risks > 0 ? "bad" : "warn") : "ok");
+      }
+
+      var pinEl = $("stat-net-pinholes");
+      if (pinEl) {
+        pinEl.textContent = sum.pinholes || 0;
+        pinEl.className = "stat-val " + (sum.pinholes > 0 ? "bad" : "ok");
+      }
+
+      // 3. Router Pinholes Table
+      if (pinholesContent) {
+        var mappings = data.port_mappings || [];
+        if (mappings.length === 0) {
+          pinholesContent.innerHTML = '<div style="padding: 10px 14px; background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.25); border-radius: 8px; color: var(--ok); font-size: 0.86rem;">✅ Clean: Router does not advertise any active UPnP WAN port forwarding pinholes to the public Internet.</div>';
+        } else {
+          var pinHtml = '<table class="pinhole-table"><thead><tr><th>External Port</th><th>Protocol</th><th>Internal IP</th><th>Internal Port</th><th>Description</th><th>Risk</th></tr></thead><tbody>';
+          mappings.forEach(function(m) {
+            pinHtml += '<tr><td style="font-family:var(--mono); color:var(--bad); font-weight:700;">' + escapeHtml(m.NewExternalPort) + '</td><td>' + escapeHtml(m.NewProtocol || 'TCP') + '</td><td style="font-family:var(--mono);">' + escapeHtml(m.NewInternalClient) + '</td><td style="font-family:var(--mono);">' + escapeHtml(m.NewInternalPort) + '</td><td>' + escapeHtml(m.NewPortMappingDescription || 'None') + '</td><td><span class="badge-tag bad">EXPOSED</span></td></tr>';
+          });
+          pinHtml += '</tbody></table>';
+          pinholesContent.innerHTML = pinHtml;
+        }
+      }
+
+      // 4. Update Filter Pill Counts
+      var devs = data.devices || [];
+      var counts = { all: devs.length, camera: 0, tv: 0, iot: 0, router: 0, computer: 0, risky: 0 };
+      devs.forEach(function(d) {
+        if (d.category === "camera") counts.camera++;
+        else if (d.category === "tv") counts.tv++;
+        else if (d.category === "iot") counts.iot++;
+        else if (d.category === "router") counts.router++;
+        else if (d.category === "computer") counts.computer++;
+        if (d.level === "critical" || d.level === "warn") counts.risky++;
+      });
+
+      if ($("count-cat-all")) $("count-cat-all").textContent = counts.all;
+      if ($("count-cat-camera")) $("count-cat-camera").textContent = counts.camera;
+      if ($("count-cat-tv")) $("count-cat-tv").textContent = counts.tv;
+      if ($("count-cat-iot")) $("count-cat-iot").textContent = counts.iot;
+      if ($("count-cat-router")) $("count-cat-router").textContent = counts.router;
+      if ($("count-cat-computer")) $("count-cat-computer").textContent = counts.computer;
+      if ($("count-cat-risky")) $("count-cat-risky").textContent = counts.risky;
+
+      // 5. Render Remediation
+      if (remediationList) {
+        var recs = sum.recommendations || [];
+        var remHtml = '<ol style="margin: 6px 0; padding-left: 20px; font-size: 0.88rem; color: var(--dim); line-height: 1.6;">';
+        recs.forEach(function(r) {
+          remHtml += '<li style="margin-bottom: 6px;"><strong style="color:var(--text);">' + escapeHtml(r) + '</strong></li>';
+        });
+        remHtml += '</ol>';
+        remediationList.innerHTML = remHtml;
+      }
+
+      // 6. Render Device Grid
+      renderDeviceGrid();
+    }
+
+    function renderDeviceGrid() {
+      if (!devicesGrid || !latestData) return;
+      var query = (searchInput ? searchInput.value.trim().toLowerCase() : "");
+      var devs = latestData.devices || [];
+
+      var filtered = devs.filter(function(d) {
+        if (currentCategory !== "all") {
+          if (currentCategory === "risky") {
+            if (d.level !== "critical" && d.level !== "warn") return false;
+          } else if (d.category !== currentCategory) {
+            return false;
+          }
+        }
+        if (query) {
+          var matchStr = (d.ip + " " + (d.mac || "") + " " + (d.name || "") + " " + (d.maker || "") + " " + (d.model || "") + " " + (d.kind || "")).toLowerCase();
+          if (matchStr.indexOf(query) === -1) return false;
+        }
+        return true;
+      });
+
+      if (filtered.length === 0) {
+        devicesGrid.innerHTML = '<div style="grid-column: 1 / -1; text-align: center; padding: 30px; color: var(--dim); background: var(--panel2); border-radius: 12px; border: 1px dashed var(--border);">No devices found matching current category or filter.</div>';
+        return;
+      }
+
+      var html = "";
+      filtered.forEach(function(d) {
+        var levelClass = "level-" + (d.level || "clean");
+        var badgeHtml = '<span class="badge-tag ok">CLEAN</span>';
+        if (d.level === "critical") badgeHtml = '<span class="badge-tag bad">CRITICAL</span>';
+        else if (d.level === "warn") badgeHtml = '<span class="badge-tag warn">ATTENTION</span>';
+
+        var portsHtml = "";
+        if (d.ports && d.ports.length > 0 && d.ports_detail) {
+          portsHtml = '<div class="iot-ports-container">';
+          d.ports_detail.forEach(function(pd) {
+            var chipCls = pd.risk ? "iot-port-chip risky" : "iot-port-chip";
+            portsHtml += '<span class="' + chipCls + '" title="' + escapeHtml(pd.risk || pd.name) + '">' + pd.port + ' ' + escapeHtml(pd.name) + '</span>';
+          });
+          portsHtml += '</div>';
+        } else {
+          portsHtml = '<div style="font-size: 0.78rem; color: var(--dim); margin-top: 8px;">No open ports found</div>';
+        }
+
+        var calloutHtml = "";
+        if (d.video_password === "open") {
+          calloutHtml += '<div class="iot-risk-callout">🚨 <strong>Unprotected Camera Stream (Port 554):</strong> Live video feed requires no password! Anyone on this network can watch.</div>';
+        } else if (d.risks && d.risks.length > 0) {
+          d.risks.forEach(function(r) {
+            var isCrit = r.startsWith("CRITICAL");
+            calloutHtml += '<div class="iot-risk-callout ' + (isCrit ? "" : "warn") + '">' + escapeHtml(r) + '</div>';
+          });
+        }
+
+        html += '<div class="iot-card ' + levelClass + '">';
+        html += '<div class="iot-card-header">';
+        html += '<div class="iot-card-icon">' + (d.icon || '📱') + '</div>';
+        html += '<div class="iot-card-title">';
+        html += '<div class="iot-card-name">' + escapeHtml(d.name || d.maker || 'Network Device') + '</div>';
+        html += '<div class="iot-card-ip">' + escapeHtml(d.ip) + (d.ip === latestData.router ? ' &bull; Router' : '') + '</div>';
+        html += '</div>';
+        html += badgeHtml;
+        html += '</div>';
+
+        html += '<div class="iot-card-body">';
+        html += '<div class="iot-meta-row"><span class="iot-meta-label">Vendor / OUI:</span><span class="iot-meta-val">' + escapeHtml(d.maker || 'Unknown') + '</span></div>';
+        html += '<div class="iot-meta-row"><span class="iot-meta-label">Hardware MAC:</span><span class="iot-meta-val">' + escapeHtml(d.mac || '—') + '</span></div>';
+        if (d.model) {
+          html += '<div class="iot-meta-row"><span class="iot-meta-label">Model:</span><span class="iot-meta-val">' + escapeHtml(d.model) + '</span></div>';
+        }
+        html += portsHtml;
+        html += calloutHtml;
+        html += '</div>';
+        html += '</div>';
+      });
+
+      devicesGrid.innerHTML = html;
+    }
+
+    // Category Pill filtering
+    if (categoryPills) {
+      categoryPills.addEventListener('click', function(e) {
+        var btn = e.target.closest('.pill-btn');
+        if (!btn) return;
+        categoryPills.querySelectorAll('.pill-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        currentCategory = btn.getAttribute('data-cat') || 'all';
+        renderDeviceGrid();
+      });
+    }
+
+    // Search filtering
+    if (searchInput) {
+      searchInput.addEventListener('input', function() {
+        renderDeviceGrid();
+      });
+    }
+
+    // Export Handlers
+    var btnExportHtml = $("btn-export-iot-html");
+    if (btnExportHtml) {
+      btnExportHtml.addEventListener('click', function() {
+        if (!latestData) return;
+        var dateStr = new Date().toISOString().slice(0, 10);
+        var reportHtml = buildIoTForensicReportHtml(latestData);
+        downloadReportFile(reportHtml, "shadowtrace-iot-report-" + dateStr + ".html", "text/html;charset=utf-8");
+      });
+    }
+
+    var btnPrintReport = $("btn-print-iot-report");
+    if (btnPrintReport) {
+      btnPrintReport.addEventListener('click', function() {
+        if (!latestData) return;
+        var reportHtml = buildIoTForensicReportHtml(latestData);
+        var printWin = window.open("", "_blank");
+        if (printWin) {
+          printWin.document.open();
+          printWin.document.write(reportHtml);
+          printWin.document.close();
+          printWin.focus();
+        } else {
+          alert("Popup blocked. Please allow popups for this site to print forensic reports.");
+        }
+      });
+    }
+
+    var btnExportJson = $("btn-export-iot-json");
+    if (btnExportJson) {
+      btnExportJson.addEventListener('click', function() {
+        if (!latestData) return;
+        var dateStr = new Date().toISOString().slice(0, 10);
+        downloadReportFile(JSON.stringify(latestData, null, 2), "shadowtrace-iot-scan-" + dateStr + ".json", "application/json");
+      });
+    }
+  }
+
+  // 5. Client-Side Hash Verifier (Web Crypto API)
   function setupHashVerifier() {
     var drop = $("drop-hash-verifier");
     var fileInput = $("file-hash-input");
@@ -849,6 +1344,7 @@
     setupTabs();
     detectOS();
     setupWebUsb();
+    setupIotAuditor();
     setupHashVerifier();
     setupThreatInspector();
     registerServiceWorker();
