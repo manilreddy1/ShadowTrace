@@ -1,8 +1,9 @@
 # ShadowTrace Toolkit
 
-> **Version 3 is out:** besides looking for known spyware, it now shows the ways in left open on your devices,
-> checks the links, emails, files and QR codes people send you, and walks you through your accounts and home
-> network. A double-click app for Windows, Mac and Linux, in 27 languages.
+> **Version 3.0.2 is out:** besides looking for known spyware, it now shows the ways in left open on your devices,
+> checks the links, emails, files and QR codes people send you, audits smart home & IoT devices, hunts Wi-Fi evil-twins,
+> listens for stalking AirTags, and packages forensic evidence in age-encrypted archives. Available as a double-click app
+> for Windows, Mac and Linux (in 27 languages) and as an all-in-one local **Web Hub**.
 > [Download it from the latest release](https://github.com/manilreddy1/ShadowTrace/releases/latest).
 
 > **Your antivirus may delete the program without asking.** Microsoft Defender and other antivirus
@@ -32,6 +33,25 @@ Made by archivegenocide. Built on [ShadowTrace](https://github.com/manilreddy1/S
 
 ---
 
+## What's New in Version 3.0.2
+
+1. **Full Rebranding to ShadowTrace Toolkit**:
+   - Rebranded CLI executable (`shadowtrace`), desktop graphical launcher, launcher scripts (`run-scan.cmd`, `run-scan.sh`), source packages, documentation, and all 27 localized translations in `locales/*.json`.
+2. **Wi-Fi Evil-Twin & Rogue AP Hunter**:
+   - Surveys surrounding 802.11 access points, maps IEEE hardware vendor OUIs, and flags rogue access points cloning your network name with conflicting encryption or mismatched hardware.
+3. **Bluetooth Low Energy (BLE) Stalker & AirTag Tracker Scanner**:
+   - 5-second asynchronous passive BLE listener (powered by `bleak`) detecting stalking beacons (Apple AirTag "separated from owner" alerts, Samsung SmartTag, Tile, Google Find Hub).
+4. **Suspicious File Static Analyzer**:
+   - Offline drag-and-drop file triage in the browser. Inspects Windows PE binaries (Authenticode signatures, imphash), PDFs, Office macros, and APK permissions without execution.
+5. **Offline QR Code Matrix Defanger & Lure Inspector**:
+   - Decodes QR images completely offline using pure-Python Reed-Solomon GF(256) error correction and defangs link lures (`hxxps://...`) to prevent accidental clicks.
+6. **Age-Encrypted Evidence Packaging (`.zip.age`)**:
+   - Bundles audit findings and logs into RFC 7748 X25519 + ChaCha20-Poly1305 archives signed with Ed25519, producing a 60-digit Signal-style verification safety number for safe handoffs to digital security helplines.
+7. **Smart Home & Local Network Auditor Enhancements**:
+   - Adds dynamic supernet detection (`/23`, `/22`), RTSP camera password verification (port 554), UPnP WAN port forwarding pinhole checks, and standalone printable/downloadable forensic reports (HTML/PDF/JSON).
+
+---
+
 ## ShadowTrace Web Hub (WebUSB & Browser Triage)
 
 The project includes an all-in-one privacy-first web portal in [`web/`](web/). Run it locally with:
@@ -42,10 +62,15 @@ python web/serve.py
 
 This opens **ShadowTrace Web Hub** in your browser (`http://127.0.0.1:8772/`):
 - **WebUSB Android Cable Check**: Plug in your Android phone via USB and audit installed packages, accessibility service screen-readers, device administrators, and verified boot states directly in the browser with zero PC installation.
+- **Smart Home, IoT & Local Network Security Auditor**: Discovers all devices on your Wi-Fi/Ethernet LAN, verifies whether security cameras stream video openly without a password (RTSP port 554), checks open Telnet and network ADB doors, audits router UPnP WAN port forwarding pinholes, and generates official printable/downloadable forensic reports.
+- **Wireless RF, AirTag & BLE Tracker Auditor**: 5-second passive BLE scan for Apple Find My, SmartTags, and Tiles with "away from owner" stalker alerts.
+- **Wi-Fi Evil-Twin & Rogue AP Hunter**: Surveys surrounding 802.11 APs and flags rogue access points cloning your network name with conflicting encryption or mismatched hardware.
+- **Suspicious File Static Analyzer**: Drag-and-drop offline triage of PE executables, Office docs, PDFs, and APKs; extracts Authenticode digital signatures, imphash, SHA-256/MD5, and embedded URLs/IPs without executing anything.
+- **Offline QR Code Matrix Defanger**: Pure-Python Reed-Solomon GF(256) offline QR decoder that defangs URL lures (`hxxps://...`) and checks target domains against threat IOCs without using a camera or contacting the internet.
+- **Age-Encrypted Forensic Evidence Packaging**: Bundles audit findings into an RFC 7748 X25519 + ChaCha20-Poly1305 archive signed with Ed25519, computing a 60-digit Signal-style safety number.
 - **In-Browser Phone Backup Scanner**: Inspect iPhone local backups, iOS sysdiagnose archives, or AndroidQF collections with the offline WebAssembly engine ([`web/phone/`](web/phone/)). Nothing is ever uploaded.
 - **Multi-Platform Download Hub & Hash Verifier**: Auto-detects your operating system (Windows, macOS Apple Silicon / Intel, Linux, Mobile), provides one-click binaries, and lets you drag and drop downloads to verify their SHA-256 fingerprint in browser memory before running.
 - **Offline Threat & IOC Inspector**: Test suspicious links, domains, IP addresses, or app identifiers against published mercenary spyware threat intelligence with 100% client-side lookups.
-- **Smart Home, IoT & Local Network Security Auditor**: Discovers all devices on your Wi-Fi/Ethernet LAN, verifies whether security cameras stream video openly without a password (RTSP port 554), checks open Telnet and network ADB doors, audits router UPnP WAN port forwarding pinholes, and generates official printable/downloadable forensic reports.
 - **Progressive Web App (PWA)**: Installable directly to your desktop or mobile home screen (iOS & Android) with full offline caching.
 
 ## Easiest: download the program (no Python, no commands)
@@ -506,13 +531,22 @@ confirm. They are prevention advice, never findings, and never change the result
 
 `--home-network` is not part of the spyware check: it is the one part of the toolkit that talks to
 other devices, so it explains what it will do and asks each time. On the local network this
-computer is on (private addresses only, the 256 addresses around it) it finds the devices and their
-names (Bonjour/mDNS and UPnP), tries to open a connection to a short list of ports on each and
-closes it at once, and reads the router's UPnP description and its list of ports opened to the
-internet. It reports risky doors - Android debugging left open on a TV or phone, Telnet, camera
-recorders, remote desktop and VNC - cameras on the network, and ports your router has opened. It
-never logs in, tries a password or changes anything. Only run it on a network you own or are
+computer is on (private RFC 1918 addresses only; dynamically supports standard `/24` as well as
+supernetted `/23` and `/22` subnets) it finds the devices and their names (Bonjour/mDNS and UPnP),
+tries to open a connection to a short list of ports on each and closes it at once (non-destructive connect & close),
+and reads the router's UPnP description and its list of active WAN port forwarding pinholes opened to the
+public internet. It reports risky doors:
+- Android debugging (ADB 5555) left open over network on a TV or phone;
+- Telnet (port 23), camera controllers (ports 8000/34567/37777), remote desktop (RDP), VNC, and unencrypted MQTT;
+- **Unprotected Video Cameras (port 554)**: verifies zero-credential RTSP streaming to alert when live video feeds can be viewed without a password;
+- **Router UPnP WAN Pinholes**: alerts when internal devices have requested the router to map ports directly to the public internet.
+
+It never logs in, tries passwords or changes anything. Only run it on a network you own or are
 responsible for.
+
+The check is fully integrated into the **ShadowTrace Web Hub** (`web/`): run it with one click to see
+interactive device cards, filter by category (Cameras, Smart TVs, IoT, Routers, Computers), search by IP/MAC/maker,
+and generate official, printable forensic reports (`.html` or `.pdf`) with verifiable audit seals.
 
 It also tests whether the router's lookups are being changed - the classic sign of a router whose DNS
 setting was altered by someone or by malware - without logging into it. It asks the router to look up
@@ -609,10 +643,13 @@ all recognised. The reader is written into the toolkit (PNG, GIF, BMP and PPM, n
 handles codes that are turned, mirrored, only a pixel or two per square, and damaged - and when a code is too
 damaged to repair it says so rather than guessing at the text.
 
+You can also use the **ShadowTrace Web Hub** (`File & QR Analyzer` tab): simply drag and drop any QR image to decode
+the payload offline and copy a safe, defanged URL (`hxxps://...`).
+
 ### Check a suspicious file
 
 For a file you do not trust - an attachment, a download, an app someone sent you - before you open it or hand it
-to an expert. Drop it onto the program, or:
+to an expert. Drop it onto the desktop program, use the **ShadowTrace Web Hub** (`File & QR Analyzer` tab), or run:
 
     shadowtrace --check-file invoice.pdf
 
@@ -749,18 +786,20 @@ the phone and check it, *then* update and turn on Lockdown Mode or Advanced Prot
 ### Send evidence to a helper
 
 When a helpline or expert offers to look at your case, they give you an **age public key** (one line starting
-with `age1`). "Send evidence to a helper" (start menu, "More checks", or the command below) puts the reports,
+with `age1`). "Send evidence to a helper" (start menu, "More checks", the Web Hub, or the command below) puts the reports,
 phone collection, screenshots or files you choose into one package that only that key can open:
 
     shadowtrace --package-for-helper OUTFOLDER --helper-key age1... --add report.json --add phone-folder
 
-- It is encrypted with the standard **age** format, so the helper opens it with `age`, `rage` or their usual
+- It is encrypted with the standard **age** format (RFC 7748 X25519 + ChaCha20-Poly1305), so the helper opens it with `age`, `rage` or their usual
   tools. An AndroidQF phone collection is kept exactly as AndroidQF wrote it, so their tools work on it unchanged.
-- A list of every file and its SHA-256 fingerprint is **signed with your own sender key**, made the first time and
+- A list of every file and its SHA-256 fingerprint is **signed with your own sender key** (Ed25519), made the first time and
   kept on this computer. Encryption alone does not show who sent a file; the signature does. Read your **safety
   number** to the helper by phone or in person and they can confirm the package is from you.
 - No user name or computer name goes in, the unencrypted ZIP is never written to disk, and nothing is uploaded:
   you send the file yourself, by the route the helper gives you.
+- In the **ShadowTrace Web Hub** (`File & QR Analyzer` tab), you can package findings directly into an encrypted `.zip.age`
+  archive, review the 60-digit Signal-style safety code, and download the sealed archive in one click.
 - A helper with this toolkit checks a decrypted package with `--verify-package package.zip`.
 
 Keys that start with `AGE-SECRET-KEY` are secret and are refused. `--no-encryption` makes an unencrypted package,
@@ -805,7 +844,7 @@ name and address is compared with the spyware indicator lists, and the traffic i
 regular intervals like clockwork, dynamic-DNS names and encrypted connections on unusual ports. The recording is
 only read; nothing is contacted. A recording covers only the time it ran, and encrypted DNS hides look-ups.
 
-### Hidden Wi-Fi networks nearby (separate)
+### Wi-Fi networks and Evil-Twin Rogue AP hunter (separate)
 
 `--wifi-nearby` lists the Wi-Fi networks this computer already hears and says what a hidden one probably is:
 who made the device (the IEEE's public list of manufacturer codes is built in), whether it is part of the
@@ -814,10 +853,15 @@ units), whether it is a phone sharing its connection (a made-up address), and ro
 network's name cannot be read without connecting to it, which the tool never does. Windows 11 asks for location
 access before it shows nearby networks; macOS hides their hardware addresses, so less can be said there.
 
+**Evil-Twin & Rogue AP Hunting:** The scanner checks for duplicate network names (SSIDs). If multiple access points
+broadcast the same SSID with conflicting encryption suites (e.g., one WPA3 and another unencrypted/open) or different
+hardware manufacturer OUIs, it flags them as potential rogue APs or Wi-Fi Pineapples.
+
 On Windows and Linux it can then **find** one hidden network: choose it and walk slowly around with the
 computer - the signal is re-read every few seconds and the line says stronger, weaker or about the same. The
 device is where the signal is strongest. In the terminal, type the network's number when asked; Enter or Ctrl+C
-stops. `--json PATH` saves the result for the household report.
+stops. `--json PATH` saves the result for the household report. You can also run this survey from the **ShadowTrace Web Hub**
+(`Wireless & AirTag Tracker` tab).
 
 ### Bluetooth trackers (separate)
 
@@ -825,10 +869,13 @@ stops. `--json PATH` saves the result for the household report.
 items, Samsung SmartTag, Tile and Google Find Hub tags - and points out any that say they are away
 from their owner and stay near you, which is what a tracker planted in a bag or car does. It only
 receives. The double-click programs include the Bluetooth library it needs; with the Python version,
-the tool offers to install it when you first run the check (one yes; the pinned `bleak==1.1.1`, ready-made
+the tool offers to install it when you first run the check (one yes; the pinned `bleak==3.1.0`, ready-made
 packages only) - or install it yourself with `python -m pip install -r requirements-bluetooth.txt`. On a Mac,
 allow Bluetooth when asked.
 Run it again after moving: a tracker heard in both places is the one travelling with you.
+
+In the **ShadowTrace Web Hub** (`Wireless & AirTag Tracker` tab), you can run an instant 5-second asynchronous
+BLE scan to immediately inspect nearby tracker beacons and their separation status.
 
 ### One report for the whole household
 
