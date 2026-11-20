@@ -8,7 +8,7 @@
   <title>ShadowTrace Web Hub — Offline Spyware & Device Triage</title>
   <meta name="description" content="Official web hub for ShadowTrace Toolkit: Run direct WebUSB Android checks, offline iPhone backup analysis, verify downloads, and install across Windows, macOS, Linux, and Mobile.">
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 
@@ -416,16 +416,16 @@ if ('serviceWorker' in navigator) {
 if ('caches' in window) {
   caches.keys().then(function(keys) {
     keys.forEach(function(k) {
-      if (k !== 'shadowtrace-web-v5') {
+      if (k !== 'shadowtrace-web-v6') {
         caches.delete(k);
       }
     });
   });
 }
 </script>
-<script src="threat_iocs.js?v=5"></script>
-<script src="webusb-adb.js?v=5"></script>
-<script src="app.js?v=5"></script>
+<script src="threat_iocs.js?v=6"></script>
+<script src="webusb-adb.js?v=6"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
 

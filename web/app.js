@@ -173,6 +173,252 @@
       container.innerHTML = html;
     }
 
+    function downloadReportFile(content, filename, mimeType) {
+      var blob = new Blob([content], { type: mimeType || 'text/html;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function buildForensicReportHtml(res) {
+      var dateObj = new Date(res.timestamp || Date.now());
+      var dateUtc = dateObj.toUTCString();
+      var dateLocal = dateObj.toLocaleString();
+      var safeModel = escapeHtml(res.model || "Android Device");
+      var randId = Math.floor(1000 + Math.random() * 9000);
+      var refId = "ST-AND-" + dateObj.getFullYear() +
+        String(dateObj.getMonth() + 1).padStart(2, "0") +
+        String(dateObj.getDate()).padStart(2, "0") + "-" + randId;
+
+      var verdictTitle = "NO KNOWN MERCENARY SPYWARE IDENTIFIED";
+      var verdictClass = "clean";
+      var verdictDesc = "Analyzed " + res.packagesTotal + " third-party application(s), device properties, and security permissions. Zero indicators matched documented commercial mercenary spyware databases (Pegasus, Predator, Candiru, FinSpy).";
+
+      if (res.level === "known-threat") {
+        verdictTitle = "CRITICAL: DOCUMENTED SPYWARE IDENTIFIERS DETECTED";
+        verdictClass = "bad";
+        verdictDesc = "Found " + res.hits.length + " indicator(s) matching documented commercial mercenary spyware or stalkerware signatures.";
+      } else if (res.level === "worth-a-look") {
+        verdictTitle = "WORTH A CLOSER LOOK: SUSPICIOUS CONFIGURATIONS DETECTED";
+        verdictClass = "warn";
+        verdictDesc = "No known spyware matched, but " + res.leads.length + " security settings, sideloads, or elevated permissions require review.";
+      }
+
+      var html = '<!DOCTYPE html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n';
+      html += '<title>ShadowTrace Forensic Audit - ' + safeModel + ' (' + refId + ')</title>\n';
+      html += '<style>\n';
+      html += ':root { --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; --mono: "SFMono-Regular", Consolas, Menlo, monospace; }\n';
+      html += '@page { size: A4; margin: 12mm 15mm 15mm 15mm; }\n';
+      html += 'body { font-family: var(--font); color: #0f172a; background: #f8fafc; line-height: 1.5; margin: 0; padding: 24px; font-size: 13px; }\n';
+      html += '.report-sheet { max-width: 920px; margin: 0 auto; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 36px 40px; box-shadow: 0 4px 10px rgba(0,0,0,0.06); }\n';
+      html += '.toolbar { max-width: 920px; margin: 0 auto 16px auto; display: flex; gap: 10px; justify-content: flex-end; }\n';
+      html += '.btn-action { background: #0f172a; color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }\n';
+      html += '.btn-action.secondary { background: #e2e8f0; color: #1e293b; }\n';
+      html += '.btn-action:hover { opacity: 0.9; }\n';
+      html += '.header { border-bottom: 2px solid #0f172a; padding-bottom: 16px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-start; }\n';
+      html += '.brand-title { font-size: 22px; font-weight: 800; color: #0f172a; margin: 0 0 4px 0; letter-spacing: 0.5px; }\n';
+      html += '.brand-sub { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; letter-spacing: 1px; }\n';
+      html += '.meta-pill { text-align: right; font-family: var(--mono); font-size: 11px; color: #475569; }\n';
+      html += '.meta-pill strong { color: #0f172a; font-size: 12px; }\n';
+      html += '.verdict-box { border-radius: 8px; padding: 16px 20px; margin: 20px 0; border: 1px solid; border-left-width: 6px; }\n';
+      html += '.verdict-box.clean { background: #f0fdf4; border-color: #86efac; border-left-color: #22c55e; color: #15803d; }\n';
+      html += '.verdict-box.warn { background: #fffbeb; border-color: #fde68a; border-left-color: #f59e0b; color: #b45309; }\n';
+      html += '.verdict-box.bad { background: #fef2f2; border-color: #fca5a5; border-left-color: #ef4444; color: #b91c1c; }\n';
+      html += '.verdict-box h2 { margin: 0 0 6px 0; font-size: 16px; font-weight: 800; letter-spacing: 0.3px; }\n';
+      html += '.verdict-box p { margin: 0; font-size: 12.5px; color: #334155; line-height: 1.45; }\n';
+      html += '.verdict-doctrine { margin-top: 8px; font-style: italic; font-size: 11.5px; color: #64748b; border-top: 1px dashed rgba(0,0,0,0.12); padding-top: 6px; }\n';
+      html += 'h3.sec-title { font-size: 14px; font-weight: 700; color: #0f172a; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin: 28px 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px; }\n';
+      html += '.meta-grid { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }\n';
+      html += '.meta-grid th, .meta-grid td { border: 1px solid #e2e8f0; padding: 7px 10px; text-align: left; }\n';
+      html += '.meta-grid th { background: #f8fafc; color: #475569; width: 22%; font-weight: 600; }\n';
+      html += '.meta-grid td { color: #0f172a; }\n';
+      html += '.finding-box { border-left: 4px solid #ef4444; background: #fff1f2; border-radius: 4px; padding: 10px 14px; margin-bottom: 10px; font-size: 12px; }\n';
+      html += '.finding-box.lead { border-left-color: #f59e0b; background: #fffbeb; }\n';
+      html += '.finding-box strong { color: #0f172a; display: block; margin-bottom: 2px; }\n';
+      html += '.table-container { width: 100%; overflow-x: auto; margin-top: 10px; }\n';
+      html += 'table.pkg-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-bottom: 24px; }\n';
+      html += 'table.pkg-table th, table.pkg-table td { border: 1px solid #cbd5e1; padding: 6px 8px; text-align: left; vertical-align: top; }\n';
+      html += 'table.pkg-table th { background: #f1f5f9; color: #334155; font-weight: 700; }\n';
+      html += 'table.pkg-table tr:nth-child(even) { background: #f8fafc; }\n';
+      html += '.tag { display: inline-block; padding: 2px 5px; border-radius: 3px; font-size: 9.5px; font-family: var(--mono); font-weight: 600; white-space: nowrap; margin-right: 3px; }\n';
+      html += '.tag-play { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }\n';
+      html += '.tag-side { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }\n';
+      html += '.tag-threat { background: #ef4444; color: #fff; font-weight: 700; }\n';
+      html += '.tag-acc { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }\n';
+      html += '.tag-remnant { background: #e2e8f0; color: #475569; border: 1px solid #cbd5e1; }\n';
+      html += '.code-font { font-family: var(--mono); word-break: break-all; font-size: 10.5px; }\n';
+      html += '.footer-section { border-top: 1px solid #cbd5e1; margin-top: 36px; padding-top: 16px; font-size: 11px; color: #64748b; display: flex; justify-content: space-between; align-items: flex-end; }\n';
+      html += '@media print {\n';
+      html += '  body { background: #fff !important; padding: 0 !important; }\n';
+      html += '  .toolbar { display: none !important; }\n';
+      html += '  .report-sheet { border: none !important; box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }\n';
+      html += '  thead { display: table-header-group; }\n';
+      html += '  tr { page-break-inside: avoid; }\n';
+      html += '}\n';
+      html += '</style>\n</head>\n<body>\n';
+
+      // Toolbar
+      html += '<div class="toolbar">\n';
+      html += '  <button class="btn-action" onclick="window.print()">&#128424; Print to PDF / Paper</button>\n';
+      html += '  <button class="btn-action secondary" onclick="downloadReportSource()">&#128229; Save Offline HTML File</button>\n';
+      html += '</div>\n';
+
+      html += '<div class="report-sheet">\n';
+
+      // Header
+      html += '  <div class="header">\n';
+      html += '    <div class="title-group">\n';
+      html += '      <div class="brand-title">SHADOWTRACE FORENSIC TRIAGE REPORT</div>\n';
+      html += '      <div class="brand-sub">DIGITAL FORENSIC ASSESSMENT &middot; MOBILE DEVICE AUDIT</div>\n';
+      html += '    </div>\n';
+      html += '    <div class="meta-pill">\n';
+      html += '      <div>REPORT ID: <strong>' + refId + '</strong></div>\n';
+      html += '      <div>DATE: ' + dateLocal + '</div>\n';
+      html += '      <div>CLASSIFICATION: <strong>CONFIDENTIAL / PRIVILEGED</strong></div>\n';
+      html += '    </div>\n';
+      html += '  </div>\n';
+
+      // Executive Verdict
+      html += '  <div class="verdict-box ' + verdictClass + '">\n';
+      html += '    <h2>' + verdictTitle + '</h2>\n';
+      html += '    <p>' + escapeHtml(verdictDesc) + '</p>\n';
+      html += '    <div class="verdict-doctrine"><strong>Doctrine D1 Enforcement:</strong> "No known indicators were found in the places that can be checked. This is not a clean bill of health."</div>\n';
+      html += '  </div>\n';
+
+      // Device Hardware & Firmware Posture
+      html += '  <h3 class="sec-title">1. Device Telemetry &amp; Security Posture</h3>\n';
+      html += '  <table class="meta-grid">\n';
+      html += '    <tr><th>Device Model</th><td>' + safeModel + '</td><th>Operating System</th><td>Android ' + escapeHtml(res.androidVersion || "Unknown") + '</td></tr>\n';
+      html += '    <tr><th>Security Patch Level</th><td>' + escapeHtml(res.securityPatch || "Unknown") + '</td><th>Verified Boot Status</th><td>' + escapeHtml(res.verifiedBoot || "Unknown") + '</td></tr>\n';
+      html += '    <tr><th>Total 3rd-Party Packages</th><td>' + res.packagesTotal + '</td><th>Sideloaded Applications</th><td>' + res.sideloadedCount + '</td></tr>\n';
+      html += '    <tr><th>Device Administrators</th><td>' + res.deviceAdmins.length + ' registered</td><th>Accessibility Services</th><td>' + res.accessibility.length + ' active listeners</td></tr>\n';
+      html += '    <tr><th>Uninstalled Remnants</th><td>' + res.uninstalledCount + ' found</td><th>Acquisition Channel</th><td>Live USB Protocol Stream (Strict Read-Only)</td></tr>\n';
+      html += '  </table>\n';
+
+      // Findings & Hits
+      if (res.hits && res.hits.length > 0) {
+        html += '  <h3 class="sec-title" style="color:#ef4444;">2. Actionable Spyware Indicators (' + res.hits.length + ' Detected)</h3>\n';
+        res.hits.forEach(function(hit) {
+          html += '  <div class="finding-box">\n';
+          html += '    <strong>Threat: ' + escapeHtml(hit.threat) + ' &mdash; Package: ' + escapeHtml(hit.package) + '</strong>\n';
+          html += '    <div>' + escapeHtml(hit.details) + '</div>\n';
+          html += '  </div>\n';
+        });
+      }
+
+      // Leads & Permissions
+      if (res.leads && res.leads.length > 0) {
+        html += '  <h3 class="sec-title">3. Security Findings &amp; High-Risk Privileges (' + res.leads.length + ' Items)</h3>\n';
+        res.leads.forEach(function(lead) {
+          html += '  <div class="finding-box lead">\n';
+          html += '    <strong>' + escapeHtml(lead.title) + '</strong>\n';
+          html += '    <div>' + escapeHtml(lead.details) + '</div>\n';
+          html += '  </div>\n';
+        });
+      }
+
+      // Active Accessibility Services
+      if (res.accessibility && res.accessibility.length > 0) {
+        html += '  <h3 class="sec-title">4. Active Accessibility Services (Keystroke &amp; Screen Listeners)</h3>\n';
+        html += '  <table class="meta-grid">\n';
+        html += '    <tr><th>Service Component</th><th>Granted App</th></tr>\n';
+        res.accessibility.forEach(function(acc) {
+          var comp = acc.split("/");
+          html += '    <tr><td class="code-font">' + escapeHtml(acc) + '</td><td>' + escapeHtml(comp[0]) + '</td></tr>\n';
+        });
+        html += '  </table>\n';
+      }
+
+      // Full Application Inventory Table
+      html += '  <h3 class="sec-title">5. Comprehensive Third-Party Application Inventory (' + res.allPackages.length + ' Total)</h3>\n';
+      html += '  <p style="font-size:11.5px; color:#64748b; margin:0 0 10px 0;">Complete list of third-party user applications enumerated from device storage via package manager:</p>\n';
+      html += '  <div class="table-container">\n';
+      html += '    <table class="pkg-table">\n';
+      html += '      <thead>\n';
+      html += '        <tr>\n';
+      html += '          <th style="width:30px;">#</th>\n';
+      html += '          <th>Package Identifier</th>\n';
+      html += '          <th>Installer Source</th>\n';
+      html += '          <th>APK Location on Storage</th>\n';
+      html += '          <th>Status / Elevated Powers</th>\n';
+      html += '        </tr>\n';
+      html += '      </thead>\n';
+      html += '      <tbody>\n';
+
+      res.allPackages.forEach(function(pkg, idx) {
+        html += '        <tr>\n';
+        html += '          <td>' + (idx + 1) + '</td>\n';
+        html += '          <td class="code-font"><strong>' + escapeHtml(pkg.name) + '</strong></td>\n';
+        html += '          <td>';
+        if (pkg.isSideloaded && !pkg.isUninstalled) {
+          html += '<span class="tag tag-side">Sideloaded</span>';
+        } else if (pkg.isUninstalled) {
+          html += '<span class="tag tag-remnant">Remnant</span>';
+        } else {
+          html += '<span class="tag tag-play">' + escapeHtml(pkg.installer) + '</span>';
+        }
+        html += '</td>\n';
+        html += '          <td class="code-font" style="color:#64748b;">' + escapeHtml(pkg.path || "N/A") + '</td>\n';
+        html += '          <td>';
+        if (pkg.isKnownThreat) {
+          html += '<span class="tag tag-threat">&#9888; ' + escapeHtml(pkg.threat) + '</span> ';
+        }
+        if (pkg.hasAccessibility) {
+          html += '<span class="tag tag-acc">&#128065; Screen-Reader</span> ';
+        }
+        if (pkg.hasDeviceAdmin) {
+          html += '<span class="tag tag-acc">&#128737; Device Admin</span> ';
+        }
+        if (!pkg.isKnownThreat && !pkg.hasAccessibility && !pkg.hasDeviceAdmin && !pkg.isUninstalled) {
+          html += '<span style="color:#16a34a; font-size:11px;">Clean</span>';
+        }
+        html += '</td>\n';
+        html += '        </tr>\n';
+      });
+
+      html += '      </tbody>\n';
+      html += '    </table>\n';
+      html += '  </div>\n';
+
+      // Forensic Integrity Footer
+      html += '  <div class="footer-section">\n';
+      html += '    <div>\n';
+      html += '      <strong>ShadowTrace Toolkit v3.0.2</strong> &middot; Digital Forensic &amp; Spyware Triage Engine<br>\n';
+      html += '      Repository: <a href="https://github.com/manilreddy1/ShadowTrace" target="_blank">https://github.com/manilreddy1/ShadowTrace</a><br>\n';
+      html += '      Generated locally in offline browser memory &middot; Zero network egress verified.\n';
+      html += '    </div>\n';
+      html += '    <div style="text-align:right;">\n';
+      html += '      EXAMINER VERIFICATION: ___________________________<br>\n';
+      html += '      TIMESTAMP (UTC): ' + dateUtc + '\n';
+      html += '    </div>\n';
+      html += '  </div>\n';
+
+      html += '</div>\n'; // close .report-sheet
+
+      // Script to support offline download from the report toolbar
+      html += '<script>\n';
+      html += 'function downloadReportSource() {\n';
+      html += '  var blob = new Blob([document.documentElement.outerHTML], { type: "text/html;charset=utf-8" });\n';
+      html += '  var url = URL.createObjectURL(blob);\n';
+      html += '  var a = document.createElement("a");\n';
+      html += '  a.href = url;\n';
+      html += '  a.download = "shadowtrace-report-' + refId + '.html";\n';
+      html += '  document.body.appendChild(a);\n';
+      html += '  a.click();\n';
+      html += '  document.body.removeChild(a);\n';
+      html += '  URL.revokeObjectURL(url);\n';
+      html += '}\n';
+      html += '</scr' + 'ipt>\n';
+
+      html += '</body>\n</html>';
+      return html;
+    }
+
     function renderAuditVerdict(res) {
       if (!auditResults) return;
       currentScanResult = res;
@@ -197,8 +443,9 @@
 
       // Forensic Report Actions
       html += '<div class="report-actions">';
-      html += '  <button id="btn-export-json" class="btn btn-sm">&#128229; Export Forensic Report (JSON)</button>';
-      html += '  <button id="btn-print-report" class="btn btn-sm" style="background:var(--panel2);">&#128424; Print / Save as PDF</button>';
+      html += '  <button id="btn-print-report" class="btn btn-primary btn-sm">&#128424; View &amp; Print Detailed Report (PDF)</button>';
+      html += '  <button id="btn-download-html" class="btn btn-sm" style="background:var(--panel2);">&#128229; Download Report (.html)</button>';
+      html += '  <button id="btn-export-json" class="btn btn-sm" style="background:var(--panel2);">&#128190; Export Raw Data (.json)</button>';
       html += '</div>';
 
       // Device Security Posture Dashboard
@@ -274,7 +521,40 @@
       // Initial render of package list
       renderPackageList(res.allPackages, "all", "");
 
-      // Setup Export JSON & Print report handlers
+      // Setup View/Print Detailed Report
+      var btnPrint = $("btn-print-report");
+      if (btnPrint) {
+        btnPrint.addEventListener('click', function() {
+          var reportHtml = buildForensicReportHtml(res);
+          var win = window.open('', '_blank');
+          if (win) {
+            win.document.open();
+            win.document.write(reportHtml);
+            win.document.close();
+            setTimeout(function() {
+              win.focus();
+            }, 300);
+          } else {
+            // Popup blocker fallback: download directly
+            var dateStr = new Date().toISOString().slice(0, 10);
+            var safeModel = (res.model || "device").replace(/[^a-zA-Z0-9_-]/g, "_");
+            downloadReportFile(reportHtml, "shadowtrace-forensic-report-" + safeModel + "-" + dateStr + ".html", "text/html;charset=utf-8");
+          }
+        });
+      }
+
+      // Setup Download HTML Report
+      var btnDownloadHtml = $("btn-download-html");
+      if (btnDownloadHtml) {
+        btnDownloadHtml.addEventListener('click', function() {
+          var reportHtml = buildForensicReportHtml(res);
+          var dateStr = new Date().toISOString().slice(0, 10);
+          var safeModel = (res.model || "device").replace(/[^a-zA-Z0-9_-]/g, "_");
+          downloadReportFile(reportHtml, "shadowtrace-forensic-report-" + safeModel + "-" + dateStr + ".html", "text/html;charset=utf-8");
+        });
+      }
+
+      // Setup Export Raw JSON
       var btnExport = $("btn-export-json");
       if (btnExport) {
         btnExport.addEventListener('click', function() {
@@ -309,24 +589,9 @@
             rawProperties: res.properties
           };
 
-          var blob = new Blob([JSON.stringify(reportData, null, 2)], { type: "application/json" });
-          var url = URL.createObjectURL(blob);
-          var a = document.createElement("a");
           var dateStr = new Date().toISOString().slice(0, 10);
           var safeModel = (res.model || "device").replace(/[^a-zA-Z0-9_-]/g, "_");
-          a.href = url;
-          a.download = "shadowtrace-android-audit-" + safeModel + "-" + dateStr + ".json";
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-        });
-      }
-
-      var btnPrint = $("btn-print-report");
-      if (btnPrint) {
-        btnPrint.addEventListener('click', function() {
-          window.print();
+          downloadReportFile(JSON.stringify(reportData, null, 2), "shadowtrace-android-audit-" + safeModel + "-" + dateStr + ".json", "application/json");
         });
       }
 
