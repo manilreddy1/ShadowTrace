@@ -118,7 +118,7 @@ The toolkit provides dedicated offline utilities for specialized triage workflow
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                   Zero Breach Toolkit Triage Suite                     │
+│                   ShadowTrace Toolkit Triage Suite                     │
 ├───────────────────────┬────────────────────────┬───────────────────────┤
 │ Threat Investigation  │ Network & Hardware     │ Remediation & Handoff │
 ├───────────────────────┼────────────────────────┼───────────────────────┤
@@ -147,8 +147,8 @@ The toolkit provides dedicated offline utilities for specialized triage workflow
    Bluetooth Low Energy (BLE) listener (via `bleak`). Sniffs BLE advertisements to detect stalking devices separated from their owners: Apple Find My (AirTags), Samsung SmartTags, Tile, and Google Find Hub.
 8. **`--wifi-nearby` (`wifinearby.py`)**:
    Surfaces nearby hidden Wi-Fi networks, resolves device manufacturer from built-in IEEE OUI database (`ouidata.py`), detects if a hidden network is a mesh backhaul from the connected router, and provides an interactive signal-strength hot/cold tracking mode.
-9. **`--home-network` (`homenet.py`)**:
-   Opt-in local subnet scanner. Identifies devices via ARP, mDNS, and SSDP/UPnP; tests critical open ports (ADB 5555, Telnet 23, RDP, VNC, IP cameras); audits router port forwards; tests router DNS resolvers for DNSChanger hijacking.
+9. **`--home-network` (`homenet.py`) & Web IoT Auditor**:
+   Opt-in local subnet and IoT device scanner (CLI & Web Hub). Identifies devices via ARP, mDNS, and SSDP/UPnP; tests critical open doors (ADB 5555, Telnet 23, RDP, VNC, unencrypted MQTT 1883, camera controllers 8000/34567/37777); performs zero-credential RTSP stream verification (port 554) to alert on open video camera feeds; audits router UPnP IGD WAN port forwardings; calculates overall network posture score; and dynamically supports supernetted subnets (`/23`, `/22`) with host scan capping. Includes standalone printable forensic reports (`buildIoTForensicReportHtml`).
 10. **`--fix-it` (`fixit.py`)**:
     Interactive remediation for open doors (disabling RDP, turning on Firewall, disabling AutoAdminLogon, disabling SMB1). Creates local JSON undo records before executing, runs single elevated commands with user visibility, verifies read-back status, and refuses to touch domain-joined/MDM-managed enterprise machines.
 11. **`--package-for-helper` (`helperpack.py`, `ageseal.py`)**:
@@ -181,7 +181,7 @@ The toolkit provides dedicated offline utilities for specialized triage workflow
 ```mermaid
 flowchart LR
     Source["Modular Source (scan/zbtriage/)"] --> Bundle["build/bundle.py"]
-    Bundle --> SinglePy["dist/zero-breach-toolkit.py (Single-file script)"]
+    Bundle --> SinglePy["dist/shadowtrace-toolkit.py (Single-file script)"]
     SinglePy --> PyInstaller["build/build_exe.py"]
     SinglePy --> Wasm["web/phone/ (Pyodide Wasm Engine)"]
     PyInstaller --> Binary["Standalone Executable (.exe / Linux / macOS)"]
@@ -189,7 +189,7 @@ flowchart LR
 ```
 
 1. **Single-File Amalgamation (`build/bundle.py`)**:
-   Merges the 80+ Python source files, reader registries, and curated indicator lists into a single self-contained, deterministic Python script (`dist/zero-breach-toolkit.py`).
+   Merges the 80+ Python source files, reader registries, and curated indicator lists into a single self-contained, deterministic Python script (`dist/shadowtrace-toolkit.py`).
 2. **Native Binaries (`build/build_exe.py`)**:
    Packages the amalgamated script via PyInstaller into standalone single-file executables (`--onefile`, `--noupx` to avoid antivirus false positives).
 3. **WebAssembly / In-Browser Check (`web/phone/zbt_web.py`, `phone.js`, `worker.js`)**:
@@ -197,4 +197,73 @@ flowchart LR
 4. **GUI Engine (`gui.py`)**:
    Written in standard `tkinter` (zero external dependencies). Features bidirectional text rendering (`bidi.py`) for RTL languages, card-based interface, live connection auditing, and comprehensive localization across 27 languages (`locales/*.json` and `i18n_data.py`).
 5. **Testing Suite (`scan/tests/`)**:
-   199 standalone unit test files verifying netguard enforcement, boundary conditions, EVTX decoding, iOS/Android backup decryption, i18n strings, and CLI contracts.
+   Comprehensive test suite verifying netguard enforcement, boundary conditions, EVTX decoding, iOS/Android backup decryption, i18n strings, and CLI contracts.
+
+---
+
+## 7. ShadowTrace Web Hub & Automatic Device Scanning (`web/`)
+
+The ShadowTrace Web Hub is an offline-first Progressive Web Application (PWA) with a local bridge launcher providing browser-based forensic capabilities and download orchestration:
+
+```mermaid
+flowchart LR
+    Browser["Modern Browser (Chrome/Edge/Firefox/Safari)"] --> UI["Multi-Tab Cyber UI (web/index.html)"]
+    UI --> Tab1["1. Direct Checks (WebUSB & Local Bridge)"]
+    UI --> Tab2["2. IoT & Network Auditor (RFC 1918 LAN & Cameras)"]
+    UI --> Tab3["3. Download Hub (Win / Mac / Linux / Mobile)"]
+    UI --> Tab4["4. Threat & IOC Inspector (78 Commercial Spyware Signatures)"]
+    UI --> Tab5["5. Antivirus Helper & Quarantine Exclusions"]
+    UI --> Tab6["6. Emergency Helplines & First Responder Directory"]
+    
+    Tab1 --> Bridge{"Connection Mode"}
+    Bridge -->|Local Bridge /api/scan-android| ADB["Local ADB Daemon (CREATE_NO_WINDOW)"]
+    Bridge -->|Direct WebUSB API| USB["navigator.usb.requestDevice()"]
+    
+    ADB --> Exec["pm list packages -3 -f -i\nsettings get enabled_accessibility_services\ndumpsys device_policy\ngetprop ro.build.version.security_patch"]
+    USB --> Exec
+    
+    Exec --> Parser["WebUsbAdb.auditAndroidData() (webusb-adb.js)"]
+    Parser --> PkgList["Third-Party Package Explorer\n(Live search, Sideload & Screen-reading badges)"]
+    Parser --> Hits["Mercenary Spyware Signature Matching (threat_iocs.js)"]
+```
+
+### 7.1. Features & Capabilities
+1. **Automatic Android Third-Party Package Scanning**:
+   - Executes `pm list packages -3 -f -i` to automatically enumerate every third-party application on connected Android devices.
+   - Extracts APK filesystem paths, package identifiers, and installation source (Google Play Store `com.android.vending`, Meta `com.facebook.system`, Oppo/Realme `com.coloros.sau`, or `null`/Sideloaded).
+   - Audits high-risk permissions: flags apps granted `enabled_accessibility_services` (screen-reading and keystroke-logging access) or `device_policy` Device Administrator rights.
+   - Audits uninstalled remnants (`pm list packages -u`): detects residual app directories left behind by previously uninstalled stalkerware.
+   - Cross-references packages against 78 curated commercial mercenary spyware identifiers (Pegasus, Chrysaor, Predator, FinSpy, etc.).
+   - Interactive explorer with live search and filter chips: `All Packages`, `Sideloaded`, `Screen-Reading`, `Remnants`, `Threats`.
+
+2. **Device Hardware & Security Posture Dashboard**:
+   - Renders a real-time hardware status grid:
+     - Device Model (`ro.product.model`)
+     - Android OS Version (`ro.build.version.release`)
+     - Security Patch Date (`ro.build.version.security_patch`) with freshness color-coding
+     - Hardware Root of Trust / Verified Boot State (`ro.boot.verifiedbootstate`)
+     - Active Device Administrators and Accessibility Services count.
+
+3. **Forensic Report Export & Documentation**:
+   - **JSON Export (`shadowtrace-android-audit-<model>-<date>.json`)**: Complete timestamped evidence bundle containing all package paths, cryptographic indicators, and raw telemetry.
+   - **Printable PDF Audit**: Custom `@media print` styling for generating clean case files and documentation for first-responders.
+
+4. **Dual-Engine Architecture**:
+   - **Local Bridge (`web/serve.py`)**: Seamlessly connects to the local ADB daemon with process isolation (`CREATE_NO_WINDOW`) for any browser on localhost. Tested and verified on real connected Android hardware (e.g., serial `1008a7c6` with 47 user packages parsed and verified).
+   - **Direct WebUSB Client (`web/webusb-adb.js`)**: Implements raw ADB packet framing (`CNXN`, `AUTH`, `OPEN`, `WRTE`, `OKAY`, `CLSE`) using standard WebUSB (`navigator.usb`), requiring zero local server or software installation in supported browsers.
+
+5. **Multi-Platform Download & Install Hub**:
+   - Auto-detects user operating system (Windows, macOS Apple Silicon / Intel, Linux x64, Android, iOS) and highlights the recommended package.
+   - Offline PWA support via `manifest.json` and `sw.js` CacheFirst service worker.
+
+### 7.2. IoT & Local Network Security Auditor (`🌐 IoT & Network Auditor`)
+- **Automated Device Discovery**: Dynamically scans the local RFC 1918 subnet using ARP / neighbour tables (`hn_neighbours`), mDNS / Bonjour announcements (`hn_mdns`), and UPnP / SSDP device beacons (`hn_ssdp`).
+- **Supernet Subnet Mask Support**: Automatically resolves subnets with prefix length `/23` or `/22` (e.g. `10.10.22.0/23` where computer is `10.10.23.245` and gateway is `10.10.22.1`), capping scan packets to ensure complete network safety.
+- **IoT Door Auditing & Video Stream Verification**:
+  - Unauthenticated RTSP video feeds (port 554): verifies whether cameras stream video openly without a password.
+  - Telnet (port 23): alerts on unencrypted legacy remote login.
+  - Android Network Debugging (port 5555): detects exposed ADB interfaces on Smart TVs and TV boxes.
+  - Smart home messaging (MQTT 1883) and proprietary camera recorders (Hikvision 8000, XMEye 34567, Dahua 37777).
+- **Router UPnP WAN Pinhole Detection**: Queries router UPnP IGD for active port forwardings open to the public Internet.
+- **Posture Scoring & Grade**: Computes an objective posture grade (A+ through F) based on risk exposure.
+- **Standalone Forensic Report Generation**: Generates official audit reports (`buildIoTForensicReportHtml`) with printable A4 formatting, downloadable HTML, and raw JSON export.

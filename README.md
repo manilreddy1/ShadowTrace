@@ -45,6 +45,7 @@ This opens **ShadowTrace Web Hub** in your browser (`http://127.0.0.1:8772/`):
 - **In-Browser Phone Backup Scanner**: Inspect iPhone local backups, iOS sysdiagnose archives, or AndroidQF collections with the offline WebAssembly engine ([`web/phone/`](web/phone/)). Nothing is ever uploaded.
 - **Multi-Platform Download Hub & Hash Verifier**: Auto-detects your operating system (Windows, macOS Apple Silicon / Intel, Linux, Mobile), provides one-click binaries, and lets you drag and drop downloads to verify their SHA-256 fingerprint in browser memory before running.
 - **Offline Threat & IOC Inspector**: Test suspicious links, domains, IP addresses, or app identifiers against published mercenary spyware threat intelligence with 100% client-side lookups.
+- **Smart Home, IoT & Local Network Security Auditor**: Discovers all devices on your Wi-Fi/Ethernet LAN, verifies whether security cameras stream video openly without a password (RTSP port 554), checks open Telnet and network ADB doors, audits router UPnP WAN port forwarding pinholes, and generates official printable/downloadable forensic reports.
 - **Progressive Web App (PWA)**: Installable directly to your desktop or mobile home screen (iOS & Android) with full offline caching.
 
 ## Easiest: download the program (no Python, no commands)
