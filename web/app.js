@@ -1628,8 +1628,22 @@
         html += '</div>';
       }
 
+      // Actions / Copy buttons
+      html += '<div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">';
+      if (data.sha256) {
+        html += '<button type="button" class="btn btn-sm" id="btn-copy-sha256" style="font-size:0.78rem;">📋 Copy SHA-256</button>';
+      }
+      html += '</div>';
+
       html += '</div>';
       fileResults.innerHTML = html;
+
+      var copySha = $("btn-copy-sha256");
+      if (copySha && data.sha256) {
+        copySha.addEventListener("click", function() {
+          copyTextToClipboard(data.sha256, "SHA-256 hash copied to clipboard!");
+        });
+      }
     }
 
     // QR Code Defanger Handlers
@@ -1679,6 +1693,7 @@
           var data = await resp.json();
           if (!data.ok) throw new Error(data.error || "Could not read QR code matrix from that picture.");
 
+          showToast("QR code decoded offline!", "ok");
           renderQrResults(data);
         } catch (err) {
           qrResults.innerHTML = '<div class="verdict-banner bad"><p>QR Decode Note: ' + escapeHtml(err.message) + '</p><p style="font-size:0.8rem; color:var(--dim); margin-top:4px;">Ensure the picture is clear and the QR matrix is not excessively blurred or cropped. PNG screenshots work best.</p></div>';
@@ -1704,6 +1719,10 @@
       html += '<div style="font-size:0.82rem; font-weight:600; color:var(--text); margin-bottom:4px;">Defanged Payload Content (Safe to copy):</div>';
       html += '<div class="defanged-box">' + escapeHtml(data.text || "(empty payload)") + '</div>';
 
+      if (data.text) {
+        html += '<div style="margin-bottom:12px;"><button type="button" class="btn btn-sm btn-primary" id="btn-copy-qr-text" style="font-size:0.78rem;">📋 Copy Defanged Payload</button></div>';
+      }
+
       html += '<div class="file-hash-row"><span class="file-hash-lbl">Image Format:</span><span class="file-hash-val">' + escapeHtml(data.format || "Picture") + ' (' + data.size + ' bytes)</span></div>';
       if (data.modules) {
         html += '<div class="file-hash-row"><span class="file-hash-lbl">Matrix Grid:</span><span class="file-hash-val">' + data.modules + 'x' + data.modules + ' modules &bull; Version ' + (data.version || 1) + ' &bull; EC ' + escapeHtml(data.ec_level || "M") + '</span></div>';
@@ -1719,6 +1738,13 @@
 
       html += '</div>';
       qrResults.innerHTML = html;
+
+      var copyQr = $("btn-copy-qr-text");
+      if (copyQr && data.text) {
+        copyQr.addEventListener("click", function() {
+          copyTextToClipboard(data.text, "QR payload copied to clipboard!");
+        });
+      }
     }
   }
 
@@ -1761,6 +1787,7 @@
         var data = await resp.json();
         if (!data.ok) throw new Error(data.error || "Packaging failed.");
 
+        showToast("Evidence archive encrypted & signed!", "ok");
         renderAgePackageResult(data);
       } catch (err) {
         if (resultBox) {
@@ -1782,7 +1809,8 @@
       html += '<div class="safety-number-container">';
       html += '<div style="font-size:0.82rem; font-weight:700; color:var(--text); letter-spacing:0.05em; text-transform:uppercase;">60-Digit Signal-Style Verification Safety Number</div>';
       html += '<div class="safety-number-code">' + escapeHtml(data.safety_number || "—") + '</div>';
-      html += '<p style="font-size:0.78rem; color:var(--dim); margin:0;">Compare this number with your helpline responder out-of-band (over a Signal or WhatsApp voice call) to guarantee zero man-in-the-middle tampering.</p>';
+      html += '<div style="margin-top:8px;"><button type="button" class="btn btn-sm" id="btn-copy-safety-code" style="font-size:0.78rem;">📋 Copy Safety Number</button></div>';
+      html += '<p style="font-size:0.78rem; color:var(--dim); margin-top:8px;">Compare this number with your helpline responder out-of-band (over a Signal or WhatsApp voice call) to guarantee zero man-in-the-middle tampering.</p>';
       html += '</div>';
 
       html += '<div class="file-meta-card">';
@@ -1797,6 +1825,13 @@
 
       resultBox.innerHTML = html;
 
+      var copyCode = $("btn-copy-safety-code");
+      if (copyCode && data.safety_number) {
+        copyCode.addEventListener("click", function() {
+          copyTextToClipboard(data.safety_number, "Safety number copied to clipboard!");
+        });
+      }
+
       var downloadBtn = $("btn-download-age-archive");
       if (downloadBtn && data.data_b64) {
         downloadBtn.href = "data:application/octet-stream;base64," + data.data_b64;
@@ -1805,7 +1840,56 @@
     }
   }
 
-  // 9. Utility Functions
+  // 9. Toast & Clipboard Utility Functions
+  function showToast(message, type) {
+    var container = $("toast-container");
+    if (!container) return;
+    var toast = document.createElement("div");
+    toast.className = "toast " + (type || "ok");
+    var icon = (type === "bad" ? "⚠️" : (type === "warn" ? "🔔" : "✓"));
+    toast.innerHTML = '<span style="font-size:1.1rem; flex-shrink:0;">' + icon + '</span><span>' + escapeHtml(message) + '</span>';
+    container.appendChild(toast);
+    setTimeout(function() {
+      toast.style.transition = "opacity 0.3s ease, transform 0.3s ease";
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(12px) scale(0.95)";
+      setTimeout(function() {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 350);
+    }, 3800);
+  }
+  window.showShadowTraceToast = showToast;
+
+  function copyTextToClipboard(text, successMsg) {
+    if (!text) return;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        showToast(successMsg || "Copied to clipboard!", "ok");
+      }).catch(function() {
+        fallbackCopy(text, successMsg);
+      });
+    } else {
+      fallbackCopy(text, successMsg);
+    }
+  }
+
+  function fallbackCopy(text, successMsg) {
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+      showToast(successMsg || "Copied to clipboard!", "ok");
+    } catch (e) {
+      prompt("Copy to clipboard:", text);
+    }
+    document.body.removeChild(ta);
+  }
+
+  // 10. General Utility Functions
   function escapeHtml(str) {
     if (!str) return '';
     return str.toString()
