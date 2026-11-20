@@ -24,6 +24,14 @@
         switchTab(tabId);
       });
     });
+
+    $$('[data-quick-tab]').forEach(function(pill) {
+      pill.addEventListener('click', function() {
+        var tabId = pill.getAttribute('data-quick-tab');
+        switchTab(tabId);
+        window.scrollTo({ top: 180, behavior: 'smooth' });
+      });
+    });
   }
 
   function switchTab(tabId) {

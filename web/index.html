@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=9">
+  <link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 
@@ -34,6 +34,50 @@
       <span class="badge-version">v3.0.2 STABLE</span>
     </div>
   </header>
+
+  <!-- Tactical Command HUD Banner -->
+  <div class="hud-banner">
+    <div class="hud-left">
+      <div class="radar-circle" title="Passive enclave listening mode">
+        <div class="radar-beam"></div>
+        <div class="radar-ring ring-1"></div>
+        <div class="radar-ring ring-2"></div>
+        <div class="radar-blip blip-1"></div>
+        <div class="radar-blip blip-2"></div>
+      </div>
+      <div class="hud-intel-text">
+        <div class="hud-title">
+          <span>FORENSIC DEFENSE ENCLAVE</span>
+          <span class="badge-tag ok" style="font-size:0.68rem; padding:2px 7px;">ARMED &amp; SEALED</span>
+        </div>
+        <div class="hud-desc">Zero Network Calls &bull; Strict RFC 1918 Scope &bull; In-Memory Decryption Only</div>
+      </div>
+    </div>
+    <div class="hud-metrics">
+      <div class="hud-metric-row">
+        <span class="hud-lbl">EGRESS INTERCEPT</span>
+        <span class="hud-val ok"><span style="display:inline-block; width:6px; height:6px; background:var(--emerald); border-radius:50%; box-shadow:0 0 6px var(--emerald);"></span> BLOCKED (0 B)</span>
+      </div>
+      <div class="hud-metric-row">
+        <span class="hud-lbl">MERCENARY IOCS</span>
+        <span class="hud-val cyan">30,000+ LOADED</span>
+      </div>
+      <div class="hud-metric-row">
+        <span class="hud-lbl">CRYPTOGRAPHIC SEAL</span>
+        <span class="hud-val">ED25519 / X25519</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tactical Quick Launch Strip -->
+  <div class="quick-action-strip">
+    <span class="quick-label">TACTICAL LAUNCH:</span>
+    <button type="button" class="quick-pill" data-quick-tab="direct-checks">&#9889; USB Phone Auto-Scan</button>
+    <button type="button" class="quick-pill" data-quick-tab="iot-auditor">&#127760; IoT &amp; Network Audit</button>
+    <button type="button" class="quick-pill" data-quick-tab="wireless-auditor">&#128225; AirTag &amp; RF Hunter</button>
+    <button type="button" class="quick-pill" data-quick-tab="file-analyzer">&#128300; File &amp; QR Inspector</button>
+    <button type="button" class="quick-pill" data-quick-tab="download-hub">&#128229; Download Binaries</button>
+  </div>
 
   <!-- Navigation Tabs (Sleek Glass Floating Bar) -->
   <nav class="tabs-nav" aria-label="Web Hub Navigation">
@@ -755,15 +799,15 @@ if ('serviceWorker' in navigator) {
 if ('caches' in window) {
   caches.keys().then(function(keys) {
     keys.forEach(function(k) {
-      if (k !== 'shadowtrace-web-v9') {
+      if (k !== 'shadowtrace-web-v10') {
         caches.delete(k);
       }
     });
   });
 }
 </script>
-<script src="threat_iocs.js?v=9"></script>
-<script src="webusb-adb.js?v=9"></script>
-<script src="app.js?v=9"></script>
+<script src="threat_iocs.js?v=10"></script>
+<script src="webusb-adb.js?v=10"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>
