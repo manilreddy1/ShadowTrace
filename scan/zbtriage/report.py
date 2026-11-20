@@ -1453,7 +1453,7 @@ def _next_steps(w, hits):
                                  "https://archivegenocide.com/scan has a test and setup "
                                  "steps. This project publishes its own blocklists of "
                                  "these advertising domains (adblock, hosts and dnsmasq "
-                                 "formats): https://github.com/interplains/ShadowTrace-Toolkit#blocking-advertising-domains")
+                                 "formats): https://github.com/manilreddy1/ShadowTrace#blocking-advertising-domains")
         if any(h.get("tier") == "vuln-driver" and
                h.get("evidence") == EV_ON_DISK for h in hits):
             w("")

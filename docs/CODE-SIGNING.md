@@ -20,8 +20,8 @@ signed, with a test certificate that Windows does not trust.
 
 ## Team roles
 
-- Committers and reviewers: [interplains](https://github.com/interplains)
-- Approvers: [interplains](https://github.com/interplains)
+- Committers and reviewers: [manilreddy1](https://github.com/manilreddy1)
+- Approvers: [manilreddy1](https://github.com/manilreddy1)
 
 ## Privacy
 

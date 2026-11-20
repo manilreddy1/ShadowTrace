@@ -999,8 +999,8 @@ def _built_in_sets(sets: List[IocSet], status: Dict[str, object], by_id) -> None
                                  "stale": loaded.is_stale(), "indicators": len(loaded)})
 
 
-RELEASE_API ="https://api.github.com/repos/interplains/ShadowTrace-Toolkit/releases/latest"
-RELEASE_PAGE = "https://github.com/interplains/ShadowTrace-Toolkit/releases/tag/"
+RELEASE_API ="https://api.github.com/repos/manilreddy1/ShadowTrace/releases/latest"
+RELEASE_PAGE = "https://github.com/manilreddy1/ShadowTrace/releases/tag/"
 # The newest-version line of the last update in this process (the window shows it).
 LAST_VERSION_NOTICE = ""
 

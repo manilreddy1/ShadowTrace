@@ -77,7 +77,7 @@ def main():
         # builds .app bundles as a folder (one-file .app is deprecated).
         cmd = [sys.executable, "-m", "PyInstaller", "--onedir", "--windowed", "--noupx",
                "--clean", "--noconfirm", "--name", PRODUCT,
-               "--osx-bundle-identifier", "io.github.interplains.shadowtrace",
+               "--osx-bundle-identifier", "io.github.manilreddy1.shadowtrace",
                "--distpath", os.path.join(ROOT, "dist"), "--workpath", WORK,
                "--specpath", WORK, SOURCE]
     else:

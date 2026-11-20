@@ -28,7 +28,7 @@ permissions:
 jobs:
   resolve:
     # The weekly run belongs to the public repository; a private copy only runs it by hand.
-    if: ${{ github.event_name != 'schedule' || github.repository == 'interplains/ShadowTrace-Toolkit' }}
+    if: ${{ github.event_name != 'schedule' || github.repository == 'manilreddy1/ShadowTrace' }}
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.pick.outputs.tag }}
@@ -39,7 +39,7 @@ jobs:
         run: |
           tag="$WANT"
           if [ -z "$tag" ]; then
-            tag="$(curl -fsSL --retry 3 https://api.github.com/repos/interplains/ShadowTrace-Toolkit/releases/latest \
+            tag="$(curl -fsSL --retry 3 https://api.github.com/repos/manilreddy1/ShadowTrace/releases/latest \
                    | python3 -c 'import json, sys; print(json.load(sys.stdin)["tag_name"])')"
           fi
           case "$tag" in v[0-9]*) ;; *) echo "not a release tag: '$tag'"; exit 1 ;; esac
@@ -73,7 +73,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
-          repository: interplains/ShadowTrace-Toolkit
+          repository: manilreddy1/ShadowTrace
           ref: ${{ needs.resolve.outputs.tag }}
           persist-credentials: false
 
@@ -94,7 +94,7 @@ jobs:
       - name: Download the published files
         run: |
           mkdir -p rel
-          base="https://github.com/interplains/ShadowTrace-Toolkit/releases/download/$TAG"
+          base="https://github.com/manilreddy1/ShadowTrace/releases/download/$TAG"
           for f in "$FILE" SHA256SUMS-programs.txt SHA256SUMS-programs.txt.asc \
                    shadowtrace-toolkit.py shadowtrace-toolkit.py.asc SHA256SUMS.txt SHA256SUMS.txt.asc \
                    archivegenocide-signing-key.asc; do

@@ -1125,6 +1125,8 @@ _FILTER_LIST_PATHS = tuple((h, p.lower()) for h, p in (
     ("raw.githubusercontent.com", "/interplains/zero-breach/main/dist/"),
     ("raw.githubusercontent.com", "/interplains/zero-breach-toolkit/main/dist/"),
     ("raw.githubusercontent.com", "/interplains/shadowtrace-toolkit/main/dist/"),
+    ("raw.githubusercontent.com", "/manilreddy1/ShadowTrace/main/dist/"),
+    ("raw.githubusercontent.com", "/manilreddy1/shadowtrace/main/dist/"),
     ("cdn.jsdelivr.net", "/gh/ublockorigin/"), ("cdn.jsdelivr.net", "/gh/easylist/"),
     ("cdn.jsdelivr.net", "/gh/hagezi/"), ("cdn.statically.io", "/gh/ublockorigin/"),
     ("gitlab.com", "/hagezi/"), ("codeberg.org", "/hagezi/"),

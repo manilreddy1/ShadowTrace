@@ -129,7 +129,7 @@ jobs:
       # SIGNPATH_SIGNING_POLICY is set to release-signing. Only this repository
       # holds the signing token, so a copy of it builds unsigned.
       - id: unsigned
-        if: ${{ startsWith(matrix.label, 'windows-') && github.repository == 'interplains/ShadowTrace-Toolkit' && (github.event_name == 'workflow_dispatch' || vars.SIGNPATH_SIGNING_POLICY == 'release-signing') }}
+        if: ${{ startsWith(matrix.label, 'windows-') && github.repository == 'manilreddy1/ShadowTrace' && (github.event_name == 'workflow_dispatch' || vars.SIGNPATH_SIGNING_POLICY == 'release-signing') }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
           name: unsigned-${{ matrix.label }}

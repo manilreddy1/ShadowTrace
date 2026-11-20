@@ -45,7 +45,7 @@ SOURCE_NOTE = ("AdFection / Candiru indicators. Curated from public reporting "
                "(The Citizen Lab, Confiant, Recorded Future, Microsoft, ESET, "
                "Avast, Google TAG, Amnesty Security Lab). Public domain "
                "(CC0). Blocking is a stopgap; it is not proof of anything and "
-               "does not detect infection. https://github.com/interplains/zero-breach")
+               "does not detect infection. https://github.com/manilreddy1/ShadowTrace")
 
 # Scanner evidence and live blocking have different membership decisions. Keep
 # adtimizer.co in the scanner's historical evidence set, but block only the named

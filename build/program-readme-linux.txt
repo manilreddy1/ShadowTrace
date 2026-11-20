@@ -11,5 +11,5 @@ standard check. No Python install is needed.
 Do not run it with sudo: it checks your own account's browsers and files.
 
 Check the download first if you can: compare its SHA-256 with the release page,
-or run  gh attestation verify <file> --repo interplains/ShadowTrace-Toolkit
-Guide: https://github.com/interplains/ShadowTrace-Toolkit#readme
+or run  gh attestation verify <file> --repo manilreddy1/ShadowTrace
+Guide: https://github.com/manilreddy1/ShadowTrace#readme

@@ -93,7 +93,7 @@ GUI_HELPERS = (
     ("ShadowTrace on Telegram", "Join the group and ask in the MOD channel for someone to contact you privately. "
      "Never post files, reports or personal details in the group itself.", PROJECT_TELEGRAM),
 )
-BLOCKLIST_URL = "https://github.com/interplains/ShadowTrace-Toolkit#blocking-advertising-domains"
+BLOCKLIST_URL = "https://github.com/manilreddy1/ShadowTrace#blocking-advertising-domains"
 
 
 # Roughly how long each step takes on an ordinary computer, in seconds (team test, 15.5-minute Standard check:
@@ -3239,7 +3239,7 @@ def gui_help_text():
             bullet + T("The Citizen Lab: {url}", url="https://citizenlab.ca/")]),
     ]
     parts = [heading + "\n" + "\n".join(lines) for heading, lines in sections]
-    parts.append(T("More: {url}", url="https://github.com/interplains/ShadowTrace-Toolkit#readme"))
+    parts.append(T("More: {url}", url="https://github.com/manilreddy1/ShadowTrace#readme"))
     return "\n\n".join(parts) + "\n"
 
 

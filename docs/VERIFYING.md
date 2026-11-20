@@ -64,7 +64,7 @@ is checked against the single-file Python build before it is published, and GitH
 a signed attestation of exactly which workflow, commit and runner produced each file. With
 the [GitHub CLI](https://cli.github.com/):
 
-    gh attestation verify shadowtrace-toolkit-windows-x64.exe --repo interplains/ShadowTrace-Toolkit
+    gh attestation verify shadowtrace-toolkit-windows-x64.exe --repo manilreddy1/ShadowTrace
 
 From 2.0.4 on, the programs' checksums are also signed with the release key, which does not
 depend on GitHub. Download `SHA256SUMS-programs.txt` and its `.asc` file beside the programs:

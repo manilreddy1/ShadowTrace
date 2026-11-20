@@ -30,10 +30,10 @@ def test_browser_gap_names_the_app_or_terminal(monkeypatch):
     path = "/Users/x/Library/Safari/SafariTabs.db"
     _packaged(monkeypatch, True)
     note = browser._locked_note(path, exc)
-    assert "Zero Breach Toolkit Full Disk Access" in note and "Terminal" not in note
+    assert "ShadowTrace Toolkit Full Disk Access" in note and "Terminal" not in note
     _packaged(monkeypatch, False)
     note = browser._locked_note(path, exc)
-    assert "Terminal Full Disk Access" in note and "Zero Breach Toolkit" not in note
+    assert "Terminal Full Disk Access" in note and "ShadowTrace Toolkit" not in note
 
 
 def test_hash_gap_names_the_app_or_terminal(monkeypatch):
@@ -42,7 +42,7 @@ def test_hash_gap_names_the_app_or_terminal(monkeypatch):
     reasons = {"denied": 2, "large": 0, "unreadable": 0}
     _packaged(monkeypatch, True)
     text = hashscan._hs_reasons(reasons)
-    assert "give Zero Breach Toolkit Full Disk Access" in text and "Terminal" not in text
+    assert "give ShadowTrace Toolkit Full Disk Access" in text and "Terminal" not in text
     _packaged(monkeypatch, False)
     assert "give Terminal Full Disk Access" in hashscan._hs_reasons(reasons)
 
@@ -54,8 +54,8 @@ def test_summary_advice_names_the_app_or_terminal(monkeypatch):
     folder_gap = ["hash/root: 3 folder(s) or item(s) could not be opened, so nothing in them was compared "
                   "(3 permission denied); give Terminal Full Disk Access and run again"]
     _packaged(monkeypatch, True)
-    assert "Give Zero Breach Toolkit Full Disk Access" in _gap_lines(private_gap)[0]
-    assert "Full Disk Access for Zero Breach Toolkit" in " ".join(_gap_lines(folder_gap))
+    assert "Give ShadowTrace Toolkit Full Disk Access" in _gap_lines(private_gap)[0]
+    assert "Full Disk Access for ShadowTrace Toolkit" in " ".join(_gap_lines(folder_gap))
     _packaged(monkeypatch, False)
     assert "Give Terminal Full Disk Access" in _gap_lines(private_gap)[0]
     assert "Full Disk Access for Terminal" in " ".join(_gap_lines(folder_gap))
@@ -218,7 +218,7 @@ def test_version_notice_compares_strictly(tag, expect):
     note = feeds.version_notice("2.0.0", fetch=lambda: tag)
     assert bool(note) is expect
     if expect:
-        assert "is available" in note and "github.com/interplains/Zero-Breach-Toolkit/releases/tag/v" in note
+        assert "is available" in note and "github.com/manilreddy1/ShadowTrace/releases/tag/v" in note
 
 
 def test_version_notice_is_silent_on_any_failure():

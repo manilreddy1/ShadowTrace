@@ -18,5 +18,5 @@ To let it check Safari: System Settings > Privacy & Security > Full Disk Access,
 click +, choose Applications > ShadowTrace Toolkit, and turn it on.
 
 Check the download first if you can: compare its SHA-256 with the release page,
-or run  gh attestation verify <file> --repo interplains/ShadowTrace-Toolkit
-Guide: https://github.com/interplains/ShadowTrace-Toolkit#readme
+or run  gh attestation verify <file> --repo manilreddy1/ShadowTrace
+Guide: https://github.com/manilreddy1/ShadowTrace#readme
