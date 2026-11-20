@@ -2,14 +2,14 @@
  * ShadowTrace Web Hub - Offline Service Worker
  * Ensures the entire web hub runs offline in airplane mode.
  */
-const CACHE_NAME = 'shadowtrace-web-v7';
+const CACHE_NAME = 'shadowtrace-web-v8';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
-  './style.css?v=7',
-  './threat_iocs.js?v=7',
-  './webusb-adb.js?v=7',
-  './app.js?v=7',
+  './style.css?v=8',
+  './threat_iocs.js?v=8',
+  './webusb-adb.js?v=8',
+  './app.js?v=8',
   './manifest.json',
   './phone/index.html',
   './phone/phone.css?v=1',

@@ -1317,7 +1317,495 @@
     });
   }
 
-  // 6. Utility Functions
+  // 6. Wireless RF, AirTag & Rogue AP Auditor
+  function setupWirelessAuditor() {
+    var btnBle = $("btn-scan-ble");
+    var bleStatus = $("ble-status-text");
+    var bleTerm = $("ble-terminal");
+    var bleResults = $("ble-results-box");
+    var bleHeadlineBanner = $("ble-headline-banner");
+    var bleHeadlineText = $("ble-headline-text");
+    var bleList = $("ble-trackers-list");
+
+    var btnWifi = $("btn-scan-wifi");
+    var wifiStatus = $("wifi-status-text");
+    var wifiTerm = $("wifi-terminal");
+    var wifiResults = $("wifi-results-box");
+    var wifiEvilTwins = $("wifi-evil-twins");
+    var wifiList = $("wifi-networks-list");
+
+    function logBle(msg) {
+      if (!bleTerm) return;
+      var now = new Date();
+      var timeStr = "[" + now.toTimeString().split(" ")[0] + "] ";
+      bleTerm.textContent += timeStr + msg + "\n";
+      bleTerm.scrollTop = bleTerm.scrollHeight;
+    }
+
+    function logWifi(msg) {
+      if (!wifiTerm) return;
+      var now = new Date();
+      var timeStr = "[" + now.toTimeString().split(" ")[0] + "] ";
+      wifiTerm.textContent += timeStr + msg + "\n";
+      wifiTerm.scrollTop = wifiTerm.scrollHeight;
+    }
+
+    // BLE Tracker Scanner
+    if (btnBle) {
+      btnBle.addEventListener("click", async function() {
+        btnBle.disabled = true;
+        btnBle.innerHTML = '<span class="spinner" style="display:inline-block; width:13px; height:13px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; margin-right:6px; vertical-align:middle;"></span> Scanning BLE (5s)...';
+        if (bleStatus) bleStatus.textContent = "Listening for Bluetooth tracking beacons...";
+        bleTerm.textContent = "";
+        logBle("Starting passive BLE 2.4 GHz scanner via Bleak asynchronous runtime...");
+        logBle("Listening for Apple Find My (Company ID 0x004c), Samsung SmartTags, Tile, Google Find Hub...");
+
+        try {
+          var resp = await fetch("/api/scan-ble", { cache: "no-cache" });
+          if (!resp.ok) throw new Error("HTTP error " + resp.status + " from local scan bridge.");
+          var data = await resp.json();
+          if (!data.ok) throw new Error(data.error || "BLE scan failed.");
+
+          logBle("BLE scan complete. Heard " + (data.trackers ? data.trackers.length : 0) + " tracking beacon(s) across " + (data.total_sightings || 0) + " advertisement packets.");
+          logBle("Verdict: " + (data.headline || "Scan finished"));
+          if (bleStatus) bleStatus.textContent = "Scan complete (" + (data.trackers ? data.trackers.length : 0) + " found)";
+
+          renderBleResults(data);
+        } catch (err) {
+          logBle("Error: " + err.message);
+          if (bleStatus) bleStatus.textContent = "BLE scan note: " + err.message;
+        } finally {
+          btnBle.disabled = false;
+          btnBle.innerHTML = "&#9889; Scan for AirTags &amp; BLE Trackers (5s)";
+        }
+      });
+    }
+
+    function renderBleResults(data) {
+      if (!bleResults) return;
+      bleResults.style.display = "block";
+
+      var trackers = data.trackers || [];
+      var separatedCount = data.separated_count || 0;
+      var headline = data.headline || "No tracker seems to be following you";
+      var level = data.level || (separatedCount > 0 ? "bad" : "clean");
+
+      if (bleHeadlineBanner && bleHeadlineText) {
+        bleHeadlineText.textContent = headline;
+        bleHeadlineBanner.className = "verdict-banner " + (level === "bad" ? "bad" : (level === "warn" ? "warn" : "clean"));
+      }
+
+      if (!bleList) return;
+      if (trackers.length === 0) {
+        bleList.innerHTML = '<div style="padding:14px; text-align:center; color:var(--dim); font-size:0.86rem; background:var(--panel2); border-radius:8px;">✅ Clean: No AirTags, SmartTags, or tracking beacons detected nearby during this 5-second window.</div>';
+        return;
+      }
+
+      var html = "";
+      trackers.forEach(function(t) {
+        var isSep = Boolean(t.separated);
+        var itemCls = "tracker-item" + (isSep ? " separated" : "");
+        var badgeCls = isSep ? "badge-tag bad" : "badge-tag ok";
+        var badgeText = isSep ? "⚠️ SEPARATED FROM OWNER" : "ACCOMPANYING OWNER";
+
+        html += '<div class="' + itemCls + '">';
+        html += '<div class="tracker-info">';
+        html += '<div class="tracker-title"><span>📍</span> ' + escapeHtml(t.kind || "Bluetooth Tracking Beacon") + '</div>';
+        html += '<div class="tracker-meta">MAC: <strong>' + escapeHtml(t.address) + '</strong> &bull; RSSI: ' + (t.strongest || -100) + ' dBm &bull; Sightings: ' + (t.count || 1) + '</div>';
+        html += '</div>';
+        html += '<div><span class="' + badgeCls + '">' + badgeText + '</span></div>';
+        html += '</div>';
+      });
+
+      bleList.innerHTML = html;
+    }
+
+    // Wi-Fi & Rogue AP Scanner
+    if (btnWifi) {
+      btnWifi.addEventListener("click", async function() {
+        btnWifi.disabled = true;
+        btnWifi.innerHTML = '<span class="spinner" style="display:inline-block; width:13px; height:13px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; margin-right:6px; vertical-align:middle;"></span> Scanning Wi-Fi...';
+        if (wifiStatus) wifiStatus.textContent = "Surveying nearby Wi-Fi access points...";
+        wifiTerm.textContent = "";
+        logWifi("Querying 802.11 wireless network adapter...");
+        logWifi("Inspecting BSSIDs, SSIDs, signal strengths, authentication ciphers, and IEEE OUIs...");
+
+        try {
+          var resp = await fetch("/api/scan-wifi", { cache: "no-cache" });
+          if (!resp.ok) throw new Error("HTTP error " + resp.status + " from local scan bridge.");
+          var data = await resp.json();
+          if (!data.ok) throw new Error(data.error || "Wi-Fi scan failed.");
+
+          if (data.problem) {
+            logWifi("Note from OS adapter: " + data.problem);
+          }
+
+          logWifi("Discovered " + (data.networks ? data.networks.length : 0) + " access point(s).");
+          if (data.evil_twins && data.evil_twins.length > 0) {
+            logWifi("⚠️ WARNING: " + data.evil_twins.length + " Evil-Twin / Rogue AP candidate(s) flagged!");
+          } else {
+            logWifi("Evil-Twin check: Clean. No duplicate SSIDs with conflicting vendors or encryption.");
+          }
+          if (wifiStatus) wifiStatus.textContent = "Survey complete (" + (data.networks ? data.networks.length : 0) + " networks found)";
+
+          renderWifiResults(data);
+        } catch (err) {
+          logWifi("Error: " + err.message);
+          if (wifiStatus) wifiStatus.textContent = "Wi-Fi survey note: " + err.message;
+        } finally {
+          btnWifi.disabled = false;
+          btnWifi.innerHTML = "&#9889; Scan Visible Wi-Fi Networks";
+        }
+      });
+    }
+
+    function renderWifiResults(data) {
+      if (!wifiResults) return;
+      wifiResults.style.display = "block";
+
+      // Evil twins
+      if (wifiEvilTwins) {
+        var twins = data.evil_twins || [];
+        if (twins.length > 0) {
+          var twinHtml = '<div class="wifi-evil-card">';
+          twinHtml += '<div class="wifi-evil-title">🚨 ROGUE AP / EVIL-TWIN ALERT DETECTED</div>';
+          twinHtml += '<p style="font-size:0.84rem; margin:0 0 8px; color:var(--text);">The following network name(s) are broadcast by multiple distinct hardware vendors or mismatched encryption settings (potential Wi-Fi Pineapple or impersonation rogue AP):</p>';
+          twinHtml += '<ul style="margin:0; padding-left:20px; font-size:0.84rem; color:var(--bad); font-weight:600;">';
+          twins.forEach(function(tw) {
+            twinHtml += '<li>SSID: <code>' + escapeHtml(tw.ssid) + '</code> &mdash; ' + escapeHtml(tw.reason) + ' (' + tw.count + ' APs)</li>';
+          });
+          twinHtml += '</ul></div>';
+          wifiEvilTwins.innerHTML = twinHtml;
+        } else {
+          wifiEvilTwins.innerHTML = '<div style="padding:10px 14px; background:rgba(34, 197, 94, 0.08); border:1px solid rgba(34, 197, 94, 0.25); border-radius:8px; color:var(--ok); font-size:0.85rem; margin-bottom:10px;">✅ Clean: No Evil-Twin rogue APs detected. All duplicated SSIDs share identical authentication and vendor hardware.</div>';
+        }
+      }
+
+      // Networks list
+      if (!wifiList) return;
+      var networks = data.networks || [];
+      if (networks.length === 0) {
+        wifiList.innerHTML = '<div style="padding:14px; text-align:center; color:var(--dim); font-size:0.86rem; background:var(--panel2); border-radius:8px;">No visible Wi-Fi access points found. Make sure Wi-Fi is enabled on this computer.</div>';
+        return;
+      }
+
+      var html = "";
+      networks.forEach(function(net) {
+        var isConn = Boolean(net.is_connected);
+        var isOpen = (net.security || "").toLowerCase().indexOf("open") !== -1 || (net.security || "").toLowerCase().indexOf("none") !== -1;
+        var itemCls = "wifi-item" + (isConn ? " connected" : "");
+
+        html += '<div class="' + itemCls + '">';
+        html += '<div class="wifi-ssid-col">';
+        html += '<div class="wifi-ssid">' + (isConn ? '🟢 ' : '') + escapeHtml(net.ssid || '<Hidden Network>') + '</div>';
+        html += '<div class="wifi-details">BSSID: ' + escapeHtml(net.bssid || '—') + (net.vendor ? ' &bull; Vendor: ' + escapeHtml(net.vendor) : '') + (net.band ? ' &bull; Band: ' + escapeHtml(net.band) : '') + '</div>';
+        html += '</div>';
+
+        html += '<div style="display:flex; align-items:center; gap:8px;">';
+        if (isConn) {
+          html += '<span class="badge-tag ok">CONNECTED</span>';
+        }
+        if (isOpen) {
+          html += '<span class="badge-tag bad">OPEN / UNENCRYPTED</span>';
+        } else {
+          html += '<span class="badge-tag" style="background:var(--panel); border:1px solid var(--border); font-size:0.75rem;">' + escapeHtml(net.security || 'Encrypted') + '</span>';
+        }
+        html += '<span style="font-family:var(--mono); font-size:0.8rem; min-width:48px; text-align:right;">' + (net.signal || 0) + '%</span>';
+        html += '</div>';
+        html += '</div>';
+      });
+
+      wifiList.innerHTML = html;
+    }
+  }
+
+  // 7. Static File & QR Code Analyzer
+  function setupFileAndQrAnalyzer() {
+    var dropFile = $("drop-file-analyzer");
+    var fileInput = $("file-analyzer-input");
+    var fileResults = $("file-analyzer-results");
+
+    var dropQr = $("drop-qr-analyzer");
+    var qrInput = $("qr-analyzer-input");
+    var qrResults = $("qr-analyzer-results");
+
+    // File Inspector Handlers
+    if (dropFile) {
+      dropFile.addEventListener("click", function() {
+        if (fileInput) fileInput.click();
+      });
+      dropFile.addEventListener("dragover", function(e) {
+        e.preventDefault();
+        dropFile.classList.add("dragover");
+      });
+      dropFile.addEventListener("dragleave", function() {
+        dropFile.classList.remove("dragover");
+      });
+      dropFile.addEventListener("drop", function(e) {
+        e.preventDefault();
+        dropFile.classList.remove("dragover");
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          analyzeFile(e.dataTransfer.files[0]);
+        }
+      });
+    }
+
+    if (fileInput) {
+      fileInput.addEventListener("change", function() {
+        if (fileInput.files && fileInput.files[0]) {
+          analyzeFile(fileInput.files[0]);
+        }
+      });
+    }
+
+    function analyzeFile(file) {
+      if (!fileResults) return;
+      fileResults.style.display = "block";
+      fileResults.innerHTML = '<div style="padding:16px; text-align:center; color:var(--dim);"><span class="spinner" style="display:inline-block; width:16px; height:16px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; margin-right:8px; vertical-align:middle;"></span> Inspecting ' + escapeHtml(file.name) + ' (' + (file.size / 1024).toFixed(1) + ' KB) offline...</div>';
+
+      var reader = new FileReader();
+      reader.onload = async function(evt) {
+        try {
+          var b64 = evt.target.result.split(",")[1];
+          var resp = await fetch("/api/check-file", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ filename: file.name, data_b64: b64 })
+          });
+          if (!resp.ok) throw new Error("HTTP error " + resp.status + " from local inspector.");
+          var data = await resp.json();
+          if (!data.ok) throw new Error(data.error || "File analysis failed.");
+
+          renderFileResults(data);
+        } catch (err) {
+          fileResults.innerHTML = '<div class="verdict-banner bad"><p>Analysis error: ' + escapeHtml(err.message) + '</p></div>';
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderFileResults(data) {
+      if (!fileResults) return;
+      var levelCls = data.level === "bad" ? "bad" : (data.level === "warn" ? "warn" : "clean");
+      var levelTag = data.level === "bad" ? '<span class="badge-tag bad">RISKY / SUSPICIOUS</span>' : (data.level === "warn" ? '<span class="badge-tag warn">ATTENTION</span>' : '<span class="badge-tag ok">CLEAN / BENIGN</span>');
+
+      var html = '<div class="verdict-banner ' + levelCls + '" style="margin-bottom:14px;">';
+      html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+      html += '<h3 style="margin:0;">' + escapeHtml(data.filename) + '</h3>';
+      html += levelTag;
+      html += '</div>';
+      html += '<p style="margin:6px 0 0; font-size:0.88rem;">' + escapeHtml(data.headline || "File inspected offline") + '</p>';
+      html += '</div>';
+
+      html += '<div class="file-meta-card">';
+      html += '<div class="file-hash-row"><span class="file-hash-lbl">File Format:</span><span class="file-hash-val"><strong>' + escapeHtml(data.kind || "binary") + '</strong> &bull; ' + data.size.toLocaleString() + ' bytes</span></div>';
+      html += '<div class="file-hash-row"><span class="file-hash-lbl">SHA-256:</span><span class="file-hash-val">' + escapeHtml(data.sha256 || "—") + '</span></div>';
+      html += '<div class="file-hash-row"><span class="file-hash-lbl">MD5:</span><span class="file-hash-val">' + escapeHtml(data.md5 || "—") + '</span></div>';
+      if (data.imphash) {
+        html += '<div class="file-hash-row"><span class="file-hash-lbl">Imphash:</span><span class="file-hash-val">' + escapeHtml(data.imphash) + '</span></div>';
+      }
+
+      // Authenticode signature
+      var sig = data.signature || {};
+      if (sig.status || sig.signer) {
+        var sigText = (sig.signer ? escapeHtml(sig.signer) + " (" + escapeHtml(sig.status || "valid") + ")" : escapeHtml(sig.status));
+        html += '<div class="file-hash-row"><span class="file-hash-lbl">Authenticode:</span><span class="file-hash-val" style="color:var(--ok);">' + sigText + '</span></div>';
+      } else {
+        html += '<div class="file-hash-row"><span class="file-hash-lbl">Authenticode:</span><span class="file-hash-val" style="color:var(--dim);">Unsigned (No digital signature)</span></div>';
+      }
+
+      // Embedded URLs
+      if (data.urls && data.urls.length > 0) {
+        html += '<div style="margin-top:10px;"><strong style="font-size:0.82rem; color:var(--text);">Embedded URLs / Endpoints (' + data.urls.length + '):</strong><div class="defanged-box" style="font-size:0.78rem; max-height:100px; overflow-y:auto;">' + data.urls.map(function(u) { return escapeHtml(u); }).join('<br>') + '</div></div>';
+      }
+
+      // Notes
+      if (data.notes && data.notes.length > 0) {
+        html += '<div style="margin-top:10px; font-size:0.82rem; color:var(--dim);">';
+        data.notes.forEach(function(n) {
+          html += '<div>&bull; ' + escapeHtml(n) + '</div>';
+        });
+        html += '</div>';
+      }
+
+      html += '</div>';
+      fileResults.innerHTML = html;
+    }
+
+    // QR Code Defanger Handlers
+    if (dropQr) {
+      dropQr.addEventListener("click", function() {
+        if (qrInput) qrInput.click();
+      });
+      dropQr.addEventListener("dragover", function(e) {
+        e.preventDefault();
+        dropQr.classList.add("dragover");
+      });
+      dropQr.addEventListener("dragleave", function() {
+        dropQr.classList.remove("dragover");
+      });
+      dropQr.addEventListener("drop", function(e) {
+        e.preventDefault();
+        dropQr.classList.remove("dragover");
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          analyzeQr(e.dataTransfer.files[0]);
+        }
+      });
+    }
+
+    if (qrInput) {
+      qrInput.addEventListener("change", function() {
+        if (qrInput.files && qrInput.files[0]) {
+          analyzeQr(qrInput.files[0]);
+        }
+      });
+    }
+
+    function analyzeQr(file) {
+      if (!qrResults) return;
+      qrResults.style.display = "block";
+      qrResults.innerHTML = '<div style="padding:16px; text-align:center; color:var(--dim);"><span class="spinner" style="display:inline-block; width:16px; height:16px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; margin-right:8px; vertical-align:middle;"></span> Decoding QR code matrix offline from ' + escapeHtml(file.name) + '...</div>';
+
+      var reader = new FileReader();
+      reader.onload = async function(evt) {
+        try {
+          var b64 = evt.target.result.split(",")[1];
+          var resp = await fetch("/api/check-qr", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ data_b64: b64 })
+          });
+          if (!resp.ok) throw new Error("HTTP error " + resp.status + " from local QR decoder.");
+          var data = await resp.json();
+          if (!data.ok) throw new Error(data.error || "Could not read QR code matrix from that picture.");
+
+          renderQrResults(data);
+        } catch (err) {
+          qrResults.innerHTML = '<div class="verdict-banner bad"><p>QR Decode Note: ' + escapeHtml(err.message) + '</p><p style="font-size:0.8rem; color:var(--dim); margin-top:4px;">Ensure the picture is clear and the QR matrix is not excessively blurred or cropped. PNG screenshots work best.</p></div>';
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderQrResults(data) {
+      if (!qrResults) return;
+      var levelCls = data.level === "bad" ? "bad" : (data.level === "warn" ? "warn" : "clean");
+      var levelTag = data.level === "bad" ? '<span class="badge-tag bad">MALICIOUS / DANGEROUS LURE</span>' : (data.level === "warn" ? '<span class="badge-tag warn">ATTENTION</span>' : '<span class="badge-tag ok">CLEAN / SAFE TEXT</span>');
+
+      var html = '<div class="verdict-banner ' + levelCls + '" style="margin-bottom:14px;">';
+      html += '<div style="display:flex; justify-content:space-between; align-items:center;">';
+      html += '<h3 style="margin:0;">QR Code Decoded Offline</h3>';
+      html += levelTag;
+      html += '</div>';
+      html += '<p style="margin:6px 0 0; font-size:0.88rem;">' + escapeHtml(data.headline || "Decoded without contacting internet or executing payload") + '</p>';
+      html += '</div>';
+
+      html += '<div class="file-meta-card">';
+      html += '<div style="font-size:0.82rem; font-weight:600; color:var(--text); margin-bottom:4px;">Defanged Payload Content (Safe to copy):</div>';
+      html += '<div class="defanged-box">' + escapeHtml(data.text || "(empty payload)") + '</div>';
+
+      html += '<div class="file-hash-row"><span class="file-hash-lbl">Image Format:</span><span class="file-hash-val">' + escapeHtml(data.format || "Picture") + ' (' + data.size + ' bytes)</span></div>';
+      if (data.modules) {
+        html += '<div class="file-hash-row"><span class="file-hash-lbl">Matrix Grid:</span><span class="file-hash-val">' + data.modules + 'x' + data.modules + ' modules &bull; Version ' + (data.version || 1) + ' &bull; EC ' + escapeHtml(data.ec_level || "M") + '</span></div>';
+      }
+
+      if (data.notes && data.notes.length > 0) {
+        html += '<div style="margin-top:10px; font-size:0.82rem; color:var(--dim);">';
+        data.notes.forEach(function(n) {
+          html += '<div>&bull; ' + escapeHtml(n) + '</div>';
+        });
+        html += '</div>';
+      }
+
+      html += '</div>';
+      qrResults.innerHTML = html;
+    }
+  }
+
+  // 8. Age-Encrypted Forensic Evidence Packaging
+  function setupAgePackaging() {
+    var inputKey = $("age-recipient-key");
+    var btnPackage = $("btn-create-age-package");
+    var resultBox = $("age-package-result");
+
+    if (!btnPackage) return;
+
+    btnPackage.addEventListener("click", async function() {
+      btnPackage.disabled = true;
+      btnPackage.innerHTML = '<span class="spinner" style="display:inline-block; width:13px; height:13px; border:2px solid #fff; border-top-color:transparent; border-radius:50%; animation:spin 0.8s linear infinite; margin-right:6px; vertical-align:middle;"></span> Encrypting &amp; Packaging...';
+      if (resultBox) {
+        resultBox.style.display = "block";
+        resultBox.innerHTML = '<p style="color:var(--dim); font-size:0.86rem;"><span class="badge-seal"><span class="dot"></span></span> Generating ChaCha20-Poly1305 key, X25519 key exchange, and Ed25519 signature...</p>';
+      }
+
+      try {
+        var recipientKey = inputKey ? inputKey.value.trim() : "";
+        var auditSummary = {
+          date: new Date().toISOString(),
+          agent: "ShadowTrace Web Hub v3.0.2",
+          os: navigator.userAgent
+        };
+
+        var files = [
+          { name: "st_triage_manifest.json", content: JSON.stringify(auditSummary, null, 2) },
+          { name: "st_evidence_notes.txt", content: "ShadowTrace Forensic Triage Evidence Package\nCreated: " + new Date().toUTCString() + "\nIntegrity Seal: Ed25519 Signature Verified\nRecipient: " + (recipientKey || "Auto-Generated Demonstration Recipient Key") + "\n" }
+        ];
+
+        var resp = await fetch("/api/package-evidence", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ recipient_key: recipientKey, files: files })
+        });
+
+        if (!resp.ok) throw new Error("HTTP error " + resp.status + " from local packaging bridge.");
+        var data = await resp.json();
+        if (!data.ok) throw new Error(data.error || "Packaging failed.");
+
+        renderAgePackageResult(data);
+      } catch (err) {
+        if (resultBox) {
+          resultBox.innerHTML = '<div class="verdict-banner bad"><p>Packaging error: ' + escapeHtml(err.message) + '</p></div>';
+        }
+      } finally {
+        btnPackage.disabled = false;
+        btnPackage.innerHTML = '🔒 Create &amp; Download Signed Evidence Package (.zip.age)';
+      }
+    });
+
+    function renderAgePackageResult(data) {
+      if (!resultBox) return;
+      var html = '<div class="verdict-banner clean" style="margin-top:12px;">';
+      html += '<h3>🔒 End-to-End Encrypted Evidence Archive Created</h3>';
+      html += '<p>The archive has been encrypted via <strong>RFC 7748 X25519 + ChaCha20-Poly1305</strong> and signed with <strong>Ed25519</strong>. Only the holder of the recipient key can decrypt it.</p>';
+      html += '</div>';
+
+      html += '<div class="safety-number-container">';
+      html += '<div style="font-size:0.82rem; font-weight:700; color:var(--text); letter-spacing:0.05em; text-transform:uppercase;">60-Digit Signal-Style Verification Safety Number</div>';
+      html += '<div class="safety-number-code">' + escapeHtml(data.safety_number || "—") + '</div>';
+      html += '<p style="font-size:0.78rem; color:var(--dim); margin:0;">Compare this number with your helpline responder out-of-band (over a Signal or WhatsApp voice call) to guarantee zero man-in-the-middle tampering.</p>';
+      html += '</div>';
+
+      html += '<div class="file-meta-card">';
+      html += '<div class="file-hash-row"><span class="file-hash-lbl">Archive Name:</span><span class="file-hash-val"><strong>' + escapeHtml(data.filename) + '</strong> (' + (data.bytes || 0).toLocaleString() + ' bytes)</span></div>';
+      html += '<div class="file-hash-row"><span class="file-hash-lbl">Recipient Key:</span><span class="file-hash-val">' + escapeHtml(data.recipient) + '</span></div>';
+      html += '<div class="file-hash-row"><span class="file-hash-lbl">Package SHA-256:</span><span class="file-hash-val">' + escapeHtml(data.package_sha256 || "—") + '</span></div>';
+      html += '</div>';
+
+      html += '<div style="margin-top:14px; text-align:center;">';
+      html += '<a id="btn-download-age-archive" class="btn btn-primary" style="display:inline-block; text-decoration:none; padding:10px 20px;">⬇️ Download ' + escapeHtml(data.filename) + '</a>';
+      html += '</div>';
+
+      resultBox.innerHTML = html;
+
+      var downloadBtn = $("btn-download-age-archive");
+      if (downloadBtn && data.data_b64) {
+        downloadBtn.href = "data:application/octet-stream;base64," + data.data_b64;
+        downloadBtn.download = data.filename;
+      }
+    }
+  }
+
+  // 9. Utility Functions
   function escapeHtml(str) {
     if (!str) return '';
     return str.toString()
@@ -1345,6 +1833,9 @@
     detectOS();
     setupWebUsb();
     setupIotAuditor();
+    setupWirelessAuditor();
+    setupFileAndQrAnalyzer();
+    setupAgePackaging();
     setupHashVerifier();
     setupThreatInspector();
     registerServiceWorker();

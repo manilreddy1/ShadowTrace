@@ -1,4 +1,4 @@
-# ShadowTrace Toolkit (v3.0.x) — Complete Architectural & Forensic Overview
+# ShadowTrace Toolkit (formerly Zero Breach Toolkit) — Complete Architectural & Forensic Overview
 
 > [!IMPORTANT]
 > **Core Purpose**: ShadowTrace Toolkit is a hardened, free, and open-source digital forensic and security audit utility designed specifically for high-risk individuals (journalists, human-rights defenders, activists, civil society) and forensic first-responders. It detects traces of commercial mercenary spyware (Pegasus, Predator, Candiru/DevilsTongue, Graphite, Dante, Arid Viper, etc.), physical device extractions (Cellebrite), stalkerware, and dangerous device configurations across Windows, macOS, Linux, Android, and iOS.
@@ -118,7 +118,7 @@ The toolkit provides dedicated offline utilities for specialized triage workflow
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
-│                   ShadowTrace Toolkit Triage Suite                     │
+│                   Zero Breach Toolkit Triage Suite                     │
 ├───────────────────────┬────────────────────────┬───────────────────────┤
 │ Threat Investigation  │ Network & Hardware     │ Remediation & Handoff │
 ├───────────────────────┼────────────────────────┼───────────────────────┤
@@ -143,12 +143,16 @@ The toolkit provides dedicated offline utilities for specialized triage workflow
    Pure-Python EVTX parser (decodes ElfFile / ElfChnk binary XML). Hunts for AMSI tampering, cleared event logs (104/1102), services created from user folders (7045), memory-only executions, and decodes base64 PowerShell script blocks.
 6. **`--check-traffic` (`netcapture.py`)**:
    Parses PCAP/PCAPNG packet traces. Reassembles TCP flows to extract TLS ClientHello SNI without decryption, parses DNS queries, plain HTTP headers, detects periodic beaconing, and extracts PCAPdroid packet trailers to attribute traffic directly to Android packages.
-7. **`--trackers` (`trackers.py`)**:
-   Bluetooth Low Energy (BLE) listener (via `bleak`). Sniffs BLE advertisements to detect stalking devices separated from their owners: Apple Find My (AirTags), Samsung SmartTags, Tile, and Google Find Hub.
-8. **`--wifi-nearby` (`wifinearby.py`)**:
-   Surfaces nearby hidden Wi-Fi networks, resolves device manufacturer from built-in IEEE OUI database (`ouidata.py`), detects if a hidden network is a mesh backhaul from the connected router, and provides an interactive signal-strength hot/cold tracking mode.
+7. **`--trackers` (`trackers.py`) & Web BLE Auditor**:
+   Bluetooth Low Energy (BLE) listener (via `bleak`). Sniffs BLE advertisements to detect stalking devices separated from their owners: Apple Find My (AirTags), Samsung SmartTags, Tile, and Google Find Hub. Integrated into the Web Hub with live 5-second passive scan and separation alerts.
+8. **`--wifi-nearby` (`wifinearby.py`) & Web Rogue AP Hunter**:
+   Surfaces nearby hidden Wi-Fi networks, resolves device manufacturer from built-in IEEE OUI database (`ouidata.py`), detects if a hidden network is a mesh backhaul from the connected router, and alerts on Evil-Twin rogue access points broadcasting conflicting security or differing vendor hardware. Integrated into the Web Hub with live adapter querying.
 9. **`--home-network` (`homenet.py`) & Web IoT Auditor**:
    Opt-in local subnet and IoT device scanner (CLI & Web Hub). Identifies devices via ARP, mDNS, and SSDP/UPnP; tests critical open doors (ADB 5555, Telnet 23, RDP, VNC, unencrypted MQTT 1883, camera controllers 8000/34567/37777); performs zero-credential RTSP stream verification (port 554) to alert on open video camera feeds; audits router UPnP IGD WAN port forwardings; calculates overall network posture score; and dynamically supports supernetted subnets (`/23`, `/22`) with host scan capping. Includes standalone printable forensic reports (`buildIoTForensicReportHtml`).
+10. **`--check-file` & `--check-qr` Web Hub Integration**:
+    Complete drag-and-drop offline static analysis in the browser: checks true file format, SHA-256, Authenticode signatures, embedded URLs/IPs, and decodes QR lures into safe defanged text payloads (`hxxps://...`) without internet contact.
+11. **`--package-for-helper` (`helperpack.py`, `ageseal.py`) & Web Age Packaging**:
+    Bundles forensic evidence into an age-encrypted archive (`.zip.age`). Implements pure-Python RFC 7748 X25519, RFC 8439 ChaCha20-Poly1305, HKDF, and Ed25519 signing. Generates a local sender key and Signal-style safety number to guarantee authenticity without uploading anywhere. Direct web download of encrypted evidence archive.
 10. **`--fix-it` (`fixit.py`)**:
     Interactive remediation for open doors (disabling RDP, turning on Firewall, disabling AutoAdminLogon, disabling SMB1). Creates local JSON undo records before executing, runs single elevated commands with user visibility, verifies read-back status, and refuses to touch domain-joined/MDM-managed enterprise machines.
 11. **`--package-for-helper` (`helperpack.py`, `ageseal.py`)**:
@@ -209,11 +213,10 @@ The ShadowTrace Web Hub is an offline-first Progressive Web Application (PWA) wi
 flowchart LR
     Browser["Modern Browser (Chrome/Edge/Firefox/Safari)"] --> UI["Multi-Tab Cyber UI (web/index.html)"]
     UI --> Tab1["1. Direct Checks (WebUSB & Local Bridge)"]
-    UI --> Tab2["2. IoT & Network Auditor (RFC 1918 LAN & Cameras)"]
-    UI --> Tab3["3. Download Hub (Win / Mac / Linux / Mobile)"]
-    UI --> Tab4["4. Threat & IOC Inspector (78 Commercial Spyware Signatures)"]
-    UI --> Tab5["5. Antivirus Helper & Quarantine Exclusions"]
-    UI --> Tab6["6. Emergency Helplines & First Responder Directory"]
+    UI --> Tab2["2. Download Hub (Win / Mac / Linux / Mobile)"]
+    UI --> Tab3["3. Threat & IOC Inspector (78 Commercial Spyware Signatures)"]
+    UI --> Tab4["4. Antivirus Helper & Quarantine Exclusions"]
+    UI --> Tab5["5. Emergency Helplines & First Responder Directory"]
     
     Tab1 --> Bridge{"Connection Mode"}
     Bridge -->|Local Bridge /api/scan-android| ADB["Local ADB Daemon (CREATE_NO_WINDOW)"]
@@ -248,11 +251,11 @@ flowchart LR
    - **JSON Export (`shadowtrace-android-audit-<model>-<date>.json`)**: Complete timestamped evidence bundle containing all package paths, cryptographic indicators, and raw telemetry.
    - **Printable PDF Audit**: Custom `@media print` styling for generating clean case files and documentation for first-responders.
 
-4. **Dual-Engine Architecture**:
+2. **Dual-Engine Architecture**:
    - **Local Bridge (`web/serve.py`)**: Seamlessly connects to the local ADB daemon with process isolation (`CREATE_NO_WINDOW`) for any browser on localhost. Tested and verified on real connected Android hardware (e.g., serial `1008a7c6` with 47 user packages parsed and verified).
    - **Direct WebUSB Client (`web/webusb-adb.js`)**: Implements raw ADB packet framing (`CNXN`, `AUTH`, `OPEN`, `WRTE`, `OKAY`, `CLSE`) using standard WebUSB (`navigator.usb`), requiring zero local server or software installation in supported browsers.
 
-5. **Multi-Platform Download & Install Hub**:
+3. **Multi-Platform Download & Install Hub**:
    - Auto-detects user operating system (Windows, macOS Apple Silicon / Intel, Linux x64, Android, iOS) and highlights the recommended package.
    - Offline PWA support via `manifest.json` and `sw.js` CacheFirst service worker.
 

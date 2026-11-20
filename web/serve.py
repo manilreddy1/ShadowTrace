@@ -6,12 +6,15 @@ Usage:
     python web/serve.py [--port 8772]
 """
 import argparse
+import asyncio
+import base64
 import http.server
 import json
 import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import time
 import webbrowser
 
@@ -31,10 +34,34 @@ class WebHubHandler(http.server.SimpleHTTPRequestHandler):
         if self.path.startswith("/api/scan-network"):
             self.handle_network_scan()
             return
+        # Local Wi-Fi & Rogue AP Scan API
+        if self.path.startswith("/api/scan-wifi"):
+            self.handle_wifi_scan()
+            return
+        # Local Bluetooth & AirTag Tracker Scan API
+        if self.path.startswith("/api/scan-ble"):
+            self.handle_ble_scan()
+            return
         if self.path.startswith("/api/download/"):
             self.handle_download()
             return
         super().do_GET()
+
+    def do_POST(self):
+        content_length = int(self.headers.get("Content-Length", 0))
+        post_data = self.rfile.read(content_length) if content_length > 0 else b""
+
+        if self.path.startswith("/api/check-file"):
+            self.handle_check_file(post_data)
+            return
+        if self.path.startswith("/api/check-qr"):
+            self.handle_check_qr(post_data)
+            return
+        if self.path.startswith("/api/package-evidence"):
+            self.handle_package_evidence(post_data)
+            return
+
+        self.send_error(404, "Endpoint not found")
 
     def handle_download(self):
         filename = os.path.basename(self.path.split("?")[0])
@@ -354,6 +381,243 @@ class WebHubHandler(http.server.SimpleHTTPRequestHandler):
             }
             self.send_json(payload)
 
+        except Exception as exc:
+            self.send_json({"ok": False, "error": str(exc)})
+
+    def handle_wifi_scan(self):
+        """Scans nearby Wi-Fi networks and flags rogue APs / Evil Twins."""
+        try:
+            root_dir = os.path.dirname(HERE)
+            scan_dir = os.path.join(root_dir, "scan")
+            if scan_dir not in sys.path:
+                sys.path.insert(0, scan_dir)
+            from zbtriage import wifinearby
+
+            res = wifinearby.wn_scan()
+            networks = res.get("networks", [])
+            connected_bssid = res.get("connected", "")
+
+            # Group networks by SSID to detect Evil Twins
+            by_ssid = {}
+            for net in networks:
+                ssid = net.get("ssid") or "<Hidden Network>"
+                by_ssid.setdefault(ssid, []).append(net)
+
+            evil_twins = []
+            enriched_networks = []
+
+            for net in networks:
+                bssid = net.get("bssid", "")
+                ssid = net.get("ssid") or ""
+                vendor = wifinearby.wn_vendor(bssid) if bssid else ""
+                is_connected = bool(bssid and connected_bssid and bssid.lower() == connected_bssid.lower())
+                same_router = bool(connected_bssid and wifinearby.wn_same_router(bssid, connected_bssid))
+
+                enriched = dict(net)
+                enriched["vendor"] = vendor
+                enriched["is_connected"] = is_connected
+                enriched["same_router"] = same_router
+                enriched["closeness"] = wifinearby.wn_closeness(net.get("signal") or 0)
+                enriched_networks.append(enriched)
+
+            for ssid, aps in by_ssid.items():
+                if ssid != "<Hidden Network>" and len(aps) > 1:
+                    securities = {ap.get("security", "") for ap in aps}
+                    vendors = {wifinearby.wn_vendor(ap.get("bssid", "")) for ap in aps}
+                    if len(securities) > 1 or (len(vendors) > 1 and not any(ap.get("same_router") for ap in aps)):
+                        evil_twins.append({
+                            "ssid": ssid,
+                            "count": len(aps),
+                            "reason": "Multiple access points broadcast the same name with conflicting security or different hardware vendors."
+                        })
+
+            self.send_json({
+                "ok": True,
+                "timestamp": int(time.time() * 1000),
+                "networks": enriched_networks,
+                "connected": connected_bssid,
+                "evil_twins": evil_twins,
+                "problem": res.get("problem", ""),
+                "limited": res.get("limited", "")
+            })
+        except Exception as exc:
+            self.send_json({"ok": False, "error": str(exc)})
+
+    def handle_ble_scan(self):
+        """Scans for Bluetooth trackers (Apple AirTags, SmartTags, Tiles, Google Find Hub)."""
+        try:
+            root_dir = os.path.dirname(HERE)
+            scan_dir = os.path.join(root_dir, "scan")
+            if scan_dir not in sys.path:
+                sys.path.insert(0, scan_dir)
+            from zbtriage import trackers
+
+            sightings = []
+            import bleak
+
+            async def run_ble():
+                def on_detect(dev, adv):
+                    mfg = dict(adv.manufacturer_data or {})
+                    svc = dict(adv.service_data or {})
+                    uuids = list(adv.service_uuids or [])
+                    found = trackers.tk_classify(mfg, svc, uuids)
+                    if found:
+                        sightings.append((dev.address, found[0], found[1], adv.rssi, time.time()))
+
+                scanner = bleak.BleakScanner(detection_callback=on_detect)
+                await scanner.start()
+                await asyncio.sleep(5)  # 5-second scan window
+                await scanner.stop()
+
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                loop.run_until_complete(run_ble())
+            finally:
+                loop.close()
+
+            summary = trackers.tk_summarise(sightings, minutes=0.1)
+            headline, level = trackers.tk_headline(summary)
+
+            self.send_json({
+                "ok": True,
+                "timestamp": int(time.time() * 1000),
+                "total_sightings": len(sightings),
+                "trackers": summary,
+                "headline": headline,
+                "level": level,
+                "separated_count": sum(1 for t in summary if t.get("separated") is True)
+            })
+        except Exception as exc:
+            self.send_json({"ok": False, "error": str(exc)})
+
+    def handle_check_file(self, post_data):
+        """Inspects uploaded file static properties (Authenticode, macros, hashes, URLs)."""
+        try:
+            req = json.loads(post_data.decode("utf-8"))
+            filename = req.get("filename", "suspect.bin")
+            file_b64 = req.get("data_b64", "")
+            file_bytes = base64.b64decode(file_b64)
+
+            root_dir = os.path.dirname(HERE)
+            scan_dir = os.path.join(root_dir, "scan")
+            if scan_dir not in sys.path:
+                sys.path.insert(0, scan_dir)
+            from zbtriage import filecheck
+
+            with tempfile.TemporaryDirectory() as tmpdir:
+                tmp_path = os.path.join(tmpdir, filename)
+                with open(tmp_path, "wb") as f:
+                    f.write(file_bytes)
+
+                rec = filecheck.fc_examine(tmp_path)
+                headline = filecheck.fc_headline(rec)
+                level = filecheck.fc_level(rec)
+
+                self.send_json({
+                    "ok": True,
+                    "filename": filename,
+                    "size": rec.get("size", len(file_bytes)),
+                    "kind": rec.get("kind", ""),
+                    "md5": rec.get("md5", ""),
+                    "sha1": rec.get("sha1", ""),
+                    "sha256": rec.get("sha256", ""),
+                    "imphash": rec.get("imphash", ""),
+                    "headline": headline,
+                    "level": level,
+                    "claims": rec.get("claims", []),
+                    "notes": rec.get("notes", []),
+                    "signature": rec.get("sign", {}),
+                    "urls": rec.get("urls", [])[:30],
+                    "ips": rec.get("ips", [])[:30],
+                    "matched_threats": rec.get("matched", [])
+                })
+        except Exception as exc:
+            self.send_json({"ok": False, "error": str(exc)})
+
+    def handle_check_qr(self, post_data):
+        """Decodes and audits a QR code image without executing payloads."""
+        try:
+            req = json.loads(post_data.decode("utf-8"))
+            file_b64 = req.get("data_b64", "")
+            image_bytes = base64.b64decode(file_b64)
+
+            root_dir = os.path.dirname(HERE)
+            scan_dir = os.path.join(root_dir, "scan")
+            if scan_dir not in sys.path:
+                sys.path.insert(0, scan_dir)
+            from zbtriage import qrcheck
+
+            res = qrcheck.qr_check(image_bytes)
+            headline = qrcheck.qr_headline(res)
+            code = res.get("code") or {}
+            links = res.get("links") or {}
+            notes = res.get("notes") or []
+
+            self.send_json({
+                "ok": True,
+                "text": res.get("text", ""),
+                "format": code.get("picture", ""),
+                "modules": code.get("modules", 0),
+                "version": code.get("version", 0),
+                "ec_level": code.get("level", ""),
+                "size": len(image_bytes),
+                "headline": headline,
+                "level": res.get("level", "clean"),
+                "problem": res.get("problem", ""),
+                "notes": notes,
+                "links": links
+            })
+        except Exception as exc:
+            self.send_json({"ok": False, "error": str(exc)})
+
+    def handle_package_evidence(self, post_data):
+        """Bundles files and reports into an age-encrypted, Ed25519-signed .zip.age archive."""
+        try:
+            req = json.loads(post_data.decode("utf-8"))
+            recipient = req.get("recipient_key", "").strip()
+            files_payload = req.get("files", [])
+
+            root_dir = os.path.dirname(HERE)
+            scan_dir = os.path.join(root_dir, "scan")
+            if scan_dir not in sys.path:
+                sys.path.insert(0, scan_dir)
+            from zbtriage import helperpack, ageseal
+
+            if not recipient:
+                pk = ageseal.ag_x25519(os.urandom(32), b"\x09" + b"\x00" * 31)
+                recipient = ageseal.ag_encode_recipient(pk)
+
+            tmp_source_dir = tempfile.mkdtemp()
+            tmp_out_dir = tempfile.mkdtemp()
+
+            file_paths = []
+            for f_item in files_payload:
+                fname = os.path.basename(f_item.get("name", "report.txt"))
+                fpath = os.path.join(tmp_source_dir, fname)
+                with open(fpath, "w", encoding="utf-8") as fh:
+                    fh.write(f_item.get("content", ""))
+                file_paths.append(fpath)
+
+            res = helperpack.hp_build(file_paths, tmp_out_dir, recipient=recipient)
+            pkg_path = res.get("path")
+            pkg_filename = os.path.basename(pkg_path) if pkg_path else "evidence.zip.age"
+
+            with open(pkg_path, "rb") as fh:
+                pkg_bytes = fh.read()
+
+            pkg_b64 = base64.b64encode(pkg_bytes).decode("ascii")
+
+            self.send_json({
+                "ok": True,
+                "filename": pkg_filename,
+                "safety_number": res.get("safety_number", ""),
+                "package_sha256": res.get("package_sha256", ""),
+                "sender_key": res.get("sender_key", ""),
+                "recipient": recipient,
+                "bytes": len(pkg_bytes),
+                "data_b64": pkg_b64
+            })
         except Exception as exc:
             self.send_json({"ok": False, "error": str(exc)})
 
