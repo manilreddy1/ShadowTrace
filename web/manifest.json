@@ -1,0 +1,17 @@
+{
+  "name": "ShadowTrace Web Hub",
+  "short_name": "ShadowTrace",
+  "description": "Offline-First Digital Forensic & Spyware Triage Hub",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#07080a",
+  "theme_color": "#07080a",
+  "icons": [
+    {
+      "src": "phone/icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
+
