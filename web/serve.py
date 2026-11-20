@@ -26,7 +26,41 @@ class WebHubHandler(http.server.SimpleHTTPRequestHandler):
         if self.path.startswith("/api/scan-android"):
             self.handle_android_scan()
             return
+        if self.path.startswith("/api/download/"):
+            self.handle_download()
+            return
         super().do_GET()
+
+    def handle_download(self):
+        filename = os.path.basename(self.path.split("?")[0])
+        root_dir = os.path.dirname(HERE)
+
+        file_map = {
+            "shadowtrace-toolkit.py": os.path.join(root_dir, "dist", "shadowtrace-toolkit.py"),
+            "zero-breach-toolkit.py": os.path.join(root_dir, "dist", "zero-breach-toolkit.py"),
+            "run-scan.cmd": os.path.join(root_dir, "scan", "run-scan.cmd"),
+            "run-scan.sh": os.path.join(root_dir, "scan", "run-scan.sh"),
+            "shadowtrace-toolkit.exe": os.path.join(root_dir, "dist", "shadowtrace-toolkit.exe"),
+        }
+
+        filepath = file_map.get(filename)
+        if not filepath or not os.path.isfile(filepath):
+            self.send_error(404, f"File {filename} not found.")
+            return
+
+        try:
+            with open(filepath, "rb") as f:
+                data = f.read()
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/octet-stream")
+            self.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            self.wfile.write(data)
+        except Exception as e:
+            self.send_error(500, str(e))
 
     def send_json(self, response_data, status=200):
         payload = json.dumps(response_data).encode("utf-8")

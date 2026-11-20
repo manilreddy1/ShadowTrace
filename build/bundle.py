@@ -21,7 +21,7 @@ import time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = sys.argv[1] if len(sys.argv) > 1 else ROOT
 OUT = (sys.argv[2] if len(sys.argv) > 2
-       else os.path.join(SRC, "dist", "zero-breach-toolkit.py"))
+       else os.path.join(SRC, "dist", "shadowtrace-toolkit.py"))
 
 PKG = os.path.join(SRC, "scan", "zbtriage")
 import importlib.util
@@ -763,3 +763,9 @@ text = "\n".join(parts)
 io.open(OUT, "w", encoding="utf-8", newline="\n").write(text)
 print("wrote {} ({:,} bytes, {:,} lines)".format(
     OUT, len(text.encode("utf-8")), text.count("\n") + 1))
+
+# Also maintain backward compatible zero-breach-toolkit.py alias
+compat_out = os.path.join(SRC, "dist", "zero-breach-toolkit.py")
+if OUT != compat_out:
+    io.open(compat_out, "w", encoding="utf-8", newline="\n").write(text)
+    print("wrote backward compatibility copy to {}".format(compat_out))

@@ -141,13 +141,19 @@
             <h3 class="platform-title">&#129679; Windows (11 / 10 / 8.1 / 7)</h3>
             <span class="platform-tag">64-BIT</span>
           </div>
-          <p style="font-size: 0.88rem; color: var(--dim);">Standalone executable or batch launcher. Checks browsers, autoruns, Windows Event Logs (evtx), Prefetch, and ShimCache.</p>
+          <p style="font-size: 0.88rem; color: var(--dim);">Standalone single-file script or executable batch launcher. Checks browsers, autoruns, Windows Event Logs (evtx), Prefetch, and ShimCache.</p>
         </div>
         <div style="margin-top: 14px;">
-          <a href="https://github.com/manilreddy1/ShadowTrace/releases/latest" class="btn btn-primary" style="width: 100%; margin-bottom: 8px;">
-            Download shadowtrace-toolkit.exe
+          <a href="/api/download/shadowtrace-toolkit.py" download class="btn btn-primary" style="width: 100%; margin-bottom: 8px; text-align: center;">
+            &#128229; Download Standalone Script (.py)
           </a>
-          <p style="font-size: 0.76rem; color: var(--faint); text-align: center; margin: 0;">Or run directly from source: <code>scan\run-scan.cmd</code></p>
+          <a href="/api/download/run-scan.cmd" download class="btn btn-sm" style="width: 100%; margin-bottom: 8px; text-align: center;">
+            Download Windows Launcher (run-scan.cmd)
+          </a>
+          <a href="https://github.com/manilreddy1/ShadowTrace/releases" target="_blank" rel="noopener" class="btn btn-sm" style="width: 100%; margin-bottom: 8px; text-align: center; background: var(--panel2);">
+            GitHub Releases (Precompiled .exe) &rarr;
+          </a>
+          <p style="font-size: 0.76rem; color: var(--faint); text-align: center; margin: 0;">Run directly with: <code>python dist\shadowtrace-toolkit.py</code></p>
         </div>
       </div>
 
@@ -158,13 +164,19 @@
             <h3 class="platform-title">&#63743; macOS (Apple Silicon M1/M2/M3/M4)</h3>
             <span class="platform-tag">ARM64</span>
           </div>
-          <p style="font-size: 0.88rem; color: var(--dim);">Native Mac app bundle inside a <code>.dmg</code> disk image. Drag into Applications and run.</p>
+          <p style="font-size: 0.88rem; color: var(--dim);">Native Mac standalone copy or single-file Python script. Drag into Applications and run.</p>
         </div>
         <div style="margin-top: 14px;">
-          <a href="https://github.com/manilreddy1/ShadowTrace/releases/latest" class="btn btn-primary" style="width: 100%; margin-bottom: 8px;">
-            Download for Apple Silicon (.dmg)
+          <a href="/api/download/shadowtrace-toolkit.py" download class="btn btn-primary" style="width: 100%; margin-bottom: 8px; text-align: center;">
+            &#128229; Download Standalone Script (.py)
           </a>
-          <p style="font-size: 0.76rem; color: var(--faint); text-align: center; margin: 0;">Supports macOS Sequoia, Sonoma, Ventura, Monterey</p>
+          <a href="/api/download/run-scan.sh" download class="btn btn-sm" style="width: 100%; margin-bottom: 8px; text-align: center;">
+            Download Mac Launcher (run-scan.sh)
+          </a>
+          <a href="https://github.com/manilreddy1/ShadowTrace/releases" target="_blank" rel="noopener" class="btn btn-sm" style="width: 100%; margin-bottom: 8px; text-align: center; background: var(--panel2);">
+            GitHub Releases (.dmg) &rarr;
+          </a>
+          <p style="font-size: 0.76rem; color: var(--faint); text-align: center; margin: 0;">Run directly with: <code>python3 dist/shadowtrace-toolkit.py</code></p>
         </div>
       </div>
 
@@ -175,13 +187,19 @@
             <h3 class="platform-title">&#63743; macOS (Intel Processors)</h3>
             <span class="platform-tag">x86_64</span>
           </div>
-          <p style="font-size: 0.88rem; color: var(--dim);">Mac app disk image compiled for older Intel-based Macs.</p>
+          <p style="font-size: 0.88rem; color: var(--dim);">Standalone copy compiled for older Intel-based Macs. Includes Safari &amp; LaunchAgents inspection.</p>
         </div>
         <div style="margin-top: 14px;">
-          <a href="https://github.com/manilreddy1/ShadowTrace/releases/latest" class="btn btn-primary" style="width: 100%; margin-bottom: 8px;">
-            Download for Intel Mac (.dmg)
+          <a href="/api/download/shadowtrace-toolkit.py" download class="btn btn-primary" style="width: 100%; margin-bottom: 8px; text-align: center;">
+            &#128229; Download Standalone Script (.py)
           </a>
-          <p style="font-size: 0.76rem; color: var(--faint); text-align: center; margin: 0;">Includes Safari &amp; LaunchAgents inspection</p>
+          <a href="/api/download/run-scan.sh" download class="btn btn-sm" style="width: 100%; margin-bottom: 8px; text-align: center;">
+            Download Mac Launcher (run-scan.sh)
+          </a>
+          <a href="https://github.com/manilreddy1/ShadowTrace/releases" target="_blank" rel="noopener" class="btn btn-sm" style="width: 100%; margin-bottom: 8px; text-align: center; background: var(--panel2);">
+            GitHub Releases (.dmg) &rarr;
+          </a>
+          <p style="font-size: 0.76rem; color: var(--faint); text-align: center; margin: 0;">Run directly with: <code>python3 dist/shadowtrace-toolkit.py</code></p>
         </div>
       </div>
 
@@ -192,13 +210,19 @@
             <h3 class="platform-title">&#128039; Linux (Ubuntu, Debian, Fedora, Arch)</h3>
             <span class="platform-tag">x64</span>
           </div>
-          <p style="font-size: 0.88rem; color: var(--dim);">Standalone binary tarball or single-file Python script. Requires no root / sudo rights.</p>
+          <p style="font-size: 0.88rem; color: var(--dim);">Single-file Python script or standalone binary tarball. Requires no root / sudo rights.</p>
         </div>
         <div style="margin-top: 14px;">
-          <a href="https://github.com/manilreddy1/ShadowTrace/releases/latest" class="btn btn-primary" style="width: 100%; margin-bottom: 8px;">
-            Download shadowtrace-toolkit (.tar.gz)
+          <a href="/api/download/shadowtrace-toolkit.py" download class="btn btn-primary" style="width: 100%; margin-bottom: 8px; text-align: center;">
+            &#128229; Download Standalone Script (.py)
           </a>
-          <p style="font-size: 0.76rem; color: var(--faint); text-align: center; margin: 0;">Run with: <code>./shadowtrace-toolkit</code></p>
+          <a href="/api/download/run-scan.sh" download class="btn btn-sm" style="width: 100%; margin-bottom: 8px; text-align: center;">
+            Download Linux Launcher (run-scan.sh)
+          </a>
+          <a href="https://github.com/manilreddy1/ShadowTrace/releases" target="_blank" rel="noopener" class="btn btn-sm" style="width: 100%; margin-bottom: 8px; text-align: center; background: var(--panel2);">
+            GitHub Releases (.tar.gz) &rarr;
+          </a>
+          <p style="font-size: 0.76rem; color: var(--faint); text-align: center; margin: 0;">Run with: <code>python3 dist/shadowtrace-toolkit.py</code></p>
         </div>
       </div>
 
@@ -209,13 +233,16 @@
             <h3 class="platform-title">&#129302; Android Mobile</h3>
             <span class="platform-tag">USB / PWA</span>
           </div>
-          <p style="font-size: 0.88rem; color: var(--dim);">Run the instant WebUSB check from your PC, or generate a system bug report to analyze.</p>
+          <p style="font-size: 0.88rem; color: var(--dim);">Direct live USB device check, uninstalled remnant analysis, and bugreport inspection.</p>
         </div>
         <div style="margin-top: 14px;">
           <button class="btn btn-primary" style="width: 100%; margin-bottom: 8px;" onclick="document.querySelector('[data-tab=\'direct-checks\']').click();">
-            Use WebUSB Instant Check
+            &#9889; Auto-Scan Connected Phone Over USB
           </button>
-          <p style="font-size: 0.76rem; color: var(--faint); text-align: center; margin: 0;">Also installable as offline PWA</p>
+          <a href="phone/index.html" class="btn btn-sm" style="width: 100%; margin-bottom: 8px; text-align: center; background: var(--panel2);">
+            Open Offline AndroidQF Checker &rarr;
+          </a>
+          <p style="font-size: 0.76rem; color: var(--faint); text-align: center; margin: 0;">Also installable as offline PWA to your home screen</p>
         </div>
       </div>
 
@@ -226,11 +253,11 @@
             <h3 class="platform-title">&#128241; Apple iOS (iPhone &amp; iPad)</h3>
             <span class="platform-tag">PWA / BACKUP</span>
           </div>
-          <p style="font-size: 0.88rem; color: var(--dim);">Install this web app to your iOS home screen, or inspect local encrypted backups on your PC.</p>
+          <p style="font-size: 0.88rem; color: var(--dim);">Inspect local encrypted iTunes / Finder backups in browser memory via WebAssembly.</p>
         </div>
         <div style="margin-top: 14px;">
-          <a href="phone/index.html" class="btn btn-primary" style="width: 100%; margin-bottom: 8px;">
-            Open iOS Backup Checker
+          <a href="phone/index.html" class="btn btn-primary" style="width: 100%; margin-bottom: 8px; text-align: center;">
+            &#128421; Open Offline iOS Backup Inspector
           </a>
           <p style="font-size: 0.76rem; color: var(--faint); text-align: center; margin: 0;">Tap Safari Share &rarr; "Add to Home Screen"</p>
         </div>
